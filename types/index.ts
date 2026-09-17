@@ -66,6 +66,8 @@ export interface ProductVariant {
   size: string
   stock: number
   sku_suffix: string | null
+  /** Optional per-size price. When null, use product.sale_price ?? product.price */
+  price?: number | null
 }
 
 // ─── Cart ─────────────────────────────────────────────────────────

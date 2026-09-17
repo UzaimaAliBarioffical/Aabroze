@@ -1,5 +1,4 @@
-﻿import { createSupabaseServerClient } from '@/lib/supabase/server'
-import HeroSection from '@/components/store/HeroSection'
+﻿import HeroSection from '@/components/store/HeroSection'
 import ProductGrid from '@/components/store/ProductGrid'
 import VideoSection from '@/components/store/VideoSection'
 import NewsletterSignup from '@/components/store/NewsletterSignup'
@@ -8,33 +7,21 @@ import Link from 'next/link'
 import Button from '@/components/ui/Button'
 import SafeImage from '@/components/ui/SafeImage'
 import { collectionImages } from '@/lib/collection-images'
-import type { Product } from '@/types'
+import { fetchPublishedProducts } from '@/lib/products'
 
 export const revalidate = 60
 
 export default async function HomePage() {
-  let products: Product[] = []
-  try {
-    const supabase = await createSupabaseServerClient()
-    const { data } = await supabase
-      .from('products')
-      .select('*, images:product_images(*), variants:product_variants(*)')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(8)
-    if (data) products = data as Product[]
-  } catch {
-    products = []
-  }
-
+  const products = await fetchPublishedProducts({ limit: 12 })
+  const featured = products.filter((p) => p.is_featured)
   const newArrivals = products.filter((p) => p.is_new_arrival)
   const displayArrivals = newArrivals.length > 0 ? newArrivals : products.slice(0, 4)
+  const displayBestSellers = featured.length > 0 ? featured : products.slice(0, 8)
 
   return (
     <div className="space-y-16 md:space-y-24">
       <HeroSection />
 
-      {/* New Arrivals */}
       <section className="container-wide">
         <div className="text-center space-y-2 mb-10">
           <p className="section-subheading">Just Landed</p>
@@ -51,7 +38,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* Featured Collection Banner */}
       <section className="bg-cream py-16 border-t border-b border-beige-200">
         <div className="container-wide grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
           <div className="space-y-4 max-w-lg">
@@ -88,13 +74,12 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* All Best Sellers */}
       <section className="container-wide">
         <div className="text-center space-y-2 mb-10">
           <p className="section-subheading">Timeless Staples</p>
           <h2 className="section-heading">Best Sellers</h2>
         </div>
-        <ProductGrid products={products.slice(0, 8)} previewImages={collectionImages} />
+        <ProductGrid products={displayBestSellers} previewImages={collectionImages} />
         <div className="text-center mt-8">
           <Link href="/shop">
             <Button variant="secondary">Explore Full Store</Button>

@@ -1,27 +1,33 @@
 /**
  * Supabase Admin Client — SERVICE ROLE
- * ⚠️  NEVER import this in client-side code.
- * Use only in server actions, API routes, and middleware.
+ * NEVER import this in client-side code.
+ * Use only in server actions and API routes.
  */
-import { createClient } from '@supabase/supabase-js'
 
-let adminClient: ReturnType<typeof createClient> | null = null
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-export function createSupabaseAdminClient() {
-  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+let adminClient: SupabaseClient<any> | null = null
+
+export function createSupabaseAdminClient(): SupabaseClient<any> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set')
+  }
+
+  if (!serviceRoleKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
   }
+
   if (!adminClient) {
-    adminClient = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
+    adminClient = createClient(supabaseUrl, serviceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    })
   }
+
   return adminClient
 }

@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import BrandLogo from '@/components/ui/BrandLogo'
-import { Search, Heart, ShoppingBag, Menu } from 'lucide-react'
+import { Search, Heart, ShoppingBag, Menu, Phone, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useCart } from '@/context/CartContext'
 import { useWishlist } from '@/context/WishlistContext'
 import MobileMenu from './MobileMenu'
 import CartDrawer from './CartDrawer'
+import { STORE_PHONE_LOCAL, STORE_PHONE_TEL, storeWhatsAppUrl } from '@/lib/store-contact'
 
 const navLinks = [
   { href: '/', label: 'Home' },
@@ -57,6 +58,23 @@ export default function Header() {
 
             {/* Icons */}
             <div className="flex items-center gap-1 md:gap-2">
+              <a
+                href={STORE_PHONE_TEL}
+                aria-label={`Call AABROZE ${STORE_PHONE_LOCAL}`}
+                className="hidden lg:flex items-center gap-1.5 px-2 py-2 text-charcoal-200 hover:text-charcoal-300 transition-colors"
+              >
+                <Phone size={16} />
+                <span className="text-[11px] font-sans tracking-wider">{STORE_PHONE_LOCAL}</span>
+              </a>
+              <a
+                href={storeWhatsAppUrl('Hello AABROZE, I would like to enquire about an order.')}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="WhatsApp AABROZE"
+                className="hidden md:flex p-2 text-charcoal-200 hover:text-charcoal-300 transition-colors"
+              >
+                <MessageCircle size={20} />
+              </a>
               <Link href="/shop" aria-label="Search" className="p-2 text-charcoal-200 hover:text-charcoal-300 transition-colors">
                 <Search size={20} />
               </Link>

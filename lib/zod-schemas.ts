@@ -9,17 +9,22 @@ export const checkoutSchema = z.object({
     .trim(),
   phone: z
     .string()
-    .regex(/^(\+92|0)[0-9]{10}$/, 'Enter a valid Pakistani phone number (e.g. 03001234567)'),
+    .transform((v) => v.replace(/[\s-]/g, ''))
+    .refine((v) => /^(0[0-9]{10}|\+92[0-9]{10})$/.test(v), {
+      message: 'Enter a valid Pakistani phone number (e.g. 03XXXXXXXXX or +923XXXXXXXXX)',
+    }),
   whatsapp: z
     .string()
-    .regex(/^(\+92|0)[0-9]{10}$/, 'Enter a valid WhatsApp number')
+    .transform((v) => v.replace(/[\s-]/g, ''))
+    .refine((v) => v === '' || /^(0[0-9]{10}|\+92[0-9]{10})$/.test(v), {
+      message: 'Enter a valid WhatsApp number (e.g. 03XXXXXXXXX or +923XXXXXXXXX)',
+    })
     .optional()
     .or(z.literal('')),
   email: z
     .string()
-    .email('Enter a valid email address')
-    .optional()
-    .or(z.literal('')),
+    .trim()
+    .email('Enter a valid email address'),
   province: z.enum(
     [
       'Punjab',
@@ -111,6 +116,7 @@ export const productVariantSchema = z.object({
   size: z.string().min(1).max(50),
   stock: z.number().int().min(0).max(9999),
   sku_suffix: z.string().max(50).optional().or(z.literal('')),
+  price: z.number().min(0).max(999999).optional().nullable(),
 })
 
 export type ProductVariantInput = z.infer<typeof productVariantSchema>

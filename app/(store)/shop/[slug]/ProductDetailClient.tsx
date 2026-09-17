@@ -5,11 +5,13 @@ import SafeImage from '@/components/ui/SafeImage'
 import Button from '@/components/ui/Button'
 import SizeGuide from '@/components/store/SizeGuide'
 import { formatPKR, getDiscountPercent } from '@/lib/utils'
+import { getVariantUnitPrice, sortVariants } from '@/lib/pricing'
 import { useCart } from '@/context/CartContext'
 import { useWishlist } from '@/context/WishlistContext'
 import { Heart, Truck, RotateCcw, ShieldCheck } from 'lucide-react'
 import type { Product } from '@/types'
 import { getCollectionImage, getProductImage } from '@/lib/collection-images'
+import { useRouter } from 'next/navigation'
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const [selectedImage, setSelectedImage] = useState(0)
@@ -18,6 +20,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
   const [sizeGuideOpen, setSizeGuideOpen] = useState(false)
 
   const { addItem } = useCart()
+  const router = useRouter()
   const { addItem: addWishlist, removeItem: removeWishlist, isWishlisted } = useWishlist()
   const wishlisted = isWishlisted(product.id)
 

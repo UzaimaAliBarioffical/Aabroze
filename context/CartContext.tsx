@@ -86,10 +86,14 @@ function cartReducer(state: CartState, action: CartAction): CartState {
   }
 }
 
+export interface AddItemOptions {
+  openDrawer?: boolean
+}
+
 interface CartContextValue {
   items: CartItem[]
   isOpen: boolean
-  addItem: (item: CartItem) => void
+  addItem: (item: CartItem, options?: AddItemOptions) => void
   removeItem: (product_id: string, variant_id: string) => void
   updateQuantity: (product_id: string, variant_id: string, quantity: number) => void
   clearCart: () => void
@@ -130,10 +134,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.items])
 
-  const addItem = (item: CartItem) => {
+  const addItem = (item: CartItem, options?: AddItemOptions) => {
     dispatch({ type: 'ADD_ITEM', payload: item })
     toast.success(`${item.name} added to cart`)
-    dispatch({ type: 'OPEN_CART' })
+    if (options?.openDrawer !== false) {
+      dispatch({ type: 'OPEN_CART' })
+    }
   }
 
   const removeItem = (product_id: string, variant_id: string) => {

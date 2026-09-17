@@ -2,8 +2,9 @@
 
 import Link from 'next/link'
 import BrandLogo from '@/components/ui/BrandLogo'
-import { X, Instagram, Facebook } from 'lucide-react'
+import { X, Instagram, Facebook, Phone, MessageCircle } from 'lucide-react'
 import { useEffect } from 'react'
+import { STORE_PHONE_LOCAL, STORE_PHONE_TEL, storeWhatsAppUrl } from '@/lib/store-contact'
 
 interface MobileMenuProps {
   isOpen: boolean
@@ -63,8 +64,21 @@ export default function MobileMenu({ isOpen, onClose, links }: MobileMenuProps) 
           </ul>
         </nav>
 
-        <div className="p-6 border-t border-beige-200">
-          <div className="flex gap-4">
+        <div className="p-6 border-t border-beige-200 space-y-3">
+          <a href={STORE_PHONE_TEL} className="flex items-center gap-2 text-xs font-sans text-charcoal-200 hover:text-charcoal-300">
+            <Phone size={16} />
+            {STORE_PHONE_LOCAL}
+          </a>
+          <a
+            href={storeWhatsAppUrl('Hello AABROZE, I would like to enquire about your collection.')}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-xs font-sans text-charcoal-200 hover:text-charcoal-300"
+          >
+            <MessageCircle size={16} />
+            WhatsApp
+          </a>
+          <div className="flex gap-4 pt-2">
             <a href="https://instagram.com/aabroze" target="_blank" rel="noopener noreferrer" className="text-charcoal-200 hover:text-charcoal-300 transition-colors" aria-label="Instagram">
               <Instagram size={20} />
             </a>

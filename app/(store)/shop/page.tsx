@@ -1,7 +1,6 @@
-﻿import { createSupabaseServerClient } from '@/lib/supabase/server'
-import ProductGrid from '@/components/store/ProductGrid'
+﻿import ProductGrid from '@/components/store/ProductGrid'
 import { collectionImages } from '@/lib/collection-images'
-import type { Product } from '@/types'
+import { fetchPublishedProducts } from '@/lib/products'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,24 +11,7 @@ interface ShopPageProps {
 export default async function ShopPage({ searchParams }: ShopPageProps) {
   const resolvedParams = await searchParams
   const query = typeof resolvedParams.q === 'string' ? resolvedParams.q : undefined
-
-  let products: Product[] = []
-  try {
-    const supabase = await createSupabaseServerClient()
-    let req = supabase
-      .from('products')
-      .select('*, images:product_images(*), variants:product_variants(*)')
-      .eq('is_active', true)
-
-    if (query) {
-      req = req.ilike('name', `%${query}%`)
-    }
-
-    const { data } = await req.order('created_at', { ascending: false })
-    if (data) products = data as Product[]
-  } catch {
-    products = []
-  }
+  const products = await fetchPublishedProducts({ search: query })
 
   return (
     <div className="container-wide py-10 md:py-16">

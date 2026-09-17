@@ -1,38 +1,56 @@
 ﻿'use client'
 
 import Link from 'next/link'
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import SafeImage from '@/components/ui/SafeImage'
 import { Heart } from 'lucide-react'
 import Badge from '@/components/ui/Badge'
+import VariantSelectModal, { type VariantModalIntent } from '@/components/store/VariantSelectModal'
 import { useWishlist } from '@/context/WishlistContext'
-import { formatPKR, getDiscountPercent } from '@/lib/utils'
-import type { Product } from '@/types'
-import { cn } from '@/lib/utils'
+import { useCart } from '@/context/CartContext'
+import { formatPKR, getDiscountPercent, cn } from '@/lib/utils'
 import { getCollectionImage, getProductImage } from '@/lib/collection-images'
+import { isRealPurchasableProduct } from '@/lib/pricing'
+import type { CartItem, Product } from '@/types'
 
 interface ProductCardProps {
   product: Product
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { addItem, removeItem, isWishlisted } = useWishlist()
-  const wishlisted = isWishlisted(product.id)
+  const router = useRouter()
+  const {
+    addItem: addWishlistItem,
+    removeItem: removeWishlistItem,
+    isWishlisted,
+  } = useWishlist()
+  const { addItem: addCartItem } = useCart()
 
+  const [modalOpen, setModalOpen] = useState(false)
+  const [intent, setIntent] = useState<VariantModalIntent>('cart')
+  const [pending, setPending] = useState<'cart' | 'buy-now' | null>(null)
+
+  const wishlisted = isWishlisted(product.id)
   const primaryImage = getProductImage(product)
   const secondaryImage = product.images?.[1]?.url
   const fallbackImage = getCollectionImage(product.slug).src
-
   const effectivePrice = product.sale_price ?? product.price
-  const discount = product.sale_price ? getDiscountPercent(product.price, product.sale_price) : 0
+  const discount = product.sale_price
+    ? getDiscountPercent(product.price, product.sale_price)
+    : 0
 
-  const inStock = product.variants?.some((v) => v.stock > 0) ?? true
+  const purchasable = isRealPurchasableProduct(product)
+  const inStock = product.variants?.some((variant) => variant.stock > 0) ?? false
+  const canPurchase = purchasable && inStock
 
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault()
+    e.stopPropagation()
     if (wishlisted) {
-      removeItem(product.id)
+      removeWishlistItem(product.id)
     } else {
-      addItem({
+      addWishlistItem({
         product_id: product.id,
         name: product.name,
         slug: product.slug,
@@ -43,10 +61,31 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   }
 
+  const openModal = (nextIntent: VariantModalIntent, e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (!canPurchase) return
+    setIntent(nextIntent)
+    setModalOpen(true)
+  }
+
+  const handleConfirm = (item: CartItem) => {
+    if (intent === 'buy-now') {
+      setPending('buy-now')
+      addCartItem(item, { openDrawer: false })
+      setModalOpen(false)
+      router.push('/checkout')
+      return
+    }
+    setPending('cart')
+    addCartItem(item)
+    setModalOpen(false)
+    setPending(null)
+  }
+
   return (
     <div className="group relative">
       <Link href={`/shop/${product.slug}`} className="block">
-        {/* Image */}
         <div className="product-image-wrapper">
           <SafeImage
             src={primaryImage}
@@ -54,7 +93,10 @@ export default function ProductCard({ product }: ProductCardProps) {
             alt={product.name}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            className={cn('object-cover transition-opacity duration-500', secondaryImage && 'group-hover:opacity-0')}
+            className={cn(
+              'object-cover transition-opacity duration-500',
+              secondaryImage && 'group-hover:opacity-0'
+            )}
           />
           {secondaryImage && (
             <SafeImage
@@ -66,18 +108,15 @@ export default function ProductCard({ product }: ProductCardProps) {
               className="object-cover absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"
             />
           )}
-
-          {/* Badges */}
           <div className="absolute top-2 left-2 flex flex-col gap-1">
             {product.is_new_arrival && <Badge variant="new">New</Badge>}
             {discount > 0 && <Badge variant="sale">-{discount}%</Badge>}
             {!inStock && <Badge variant="oos">Sold Out</Badge>}
           </div>
-
-          {/* Wishlist */}
           <button
+            type="button"
             onClick={handleWishlist}
-            className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white"
+            className="absolute top-2 right-2 p-2 bg-white/80 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200 hover:bg-white focus-visible:opacity-100"
             aria-label={wishlisted ? 'Remove from wishlist' : 'Add to wishlist'}
           >
             <Heart
@@ -87,8 +126,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </button>
         </div>
 
-        {/* Info */}
-        <div className="pt-3 pb-2">
+        <div className="pt-3">
           <h3 className="font-serif text-sm md:text-base text-charcoal-300 leading-snug line-clamp-2">
             {product.name}
           </h3>
@@ -105,26 +143,38 @@ export default function ProductCard({ product }: ProductCardProps) {
               </span>
             )}
           </div>
-          {/* Available sizes */}
-          {product.variants && product.variants.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {product.variants.map((v) => (
-                <span
-                  key={v.size}
-                  className={cn(
-                    'text-[10px] font-sans px-1.5 py-0.5 border',
-                    v.stock > 0
-                      ? 'border-beige-200 text-charcoal-200'
-                      : 'border-beige-100 text-taupe-100 line-through'
-                  )}
-                >
-                  {v.size}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </Link>
+
+      <div className="grid grid-cols-2 gap-2 mt-3 pb-2">
+        <button
+          type="button"
+          onClick={(e) => openModal('cart', e)}
+          disabled={!canPurchase || pending !== null}
+          className="btn-secondary px-2 py-2.5 text-[10px] md:text-xs tracking-wider disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal-300"
+        >
+          {pending === 'cart' ? 'Adding…' : 'Add to Cart'}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => openModal('buy-now', e)}
+          disabled={!canPurchase || pending !== null}
+          className="btn-primary px-2 py-2.5 text-[10px] md:text-xs tracking-wider disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal-300"
+        >
+          {pending === 'buy-now' ? 'Loading…' : 'Buy Now'}
+        </button>
+      </div>
+
+      <VariantSelectModal
+        product={product}
+        isOpen={modalOpen}
+        intent={intent}
+        onClose={() => {
+          setModalOpen(false)
+          setPending(null)
+        }}
+        onConfirm={handleConfirm}
+      />
     </div>
   )
 }
