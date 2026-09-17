@@ -1,0 +1,211 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Inter:wght@300;400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Base Resets ──────────────────────────────────────────────── */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-cream text-charcoal-300 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif;
+  }
+
+  * {
+    @apply border-beige-200;
+  }
+
+  ::selection {
+    @apply bg-maroon-200 text-white;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 4px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-cream;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-taupe-200 rounded-full;
+  }
+}
+
+/* ─── Component Layer ──────────────────────────────────────────── */
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2
+           bg-charcoal-300 text-cream-100
+           px-6 py-3 text-sm tracking-widest uppercase font-sans font-medium
+           transition-all duration-200
+           hover:bg-charcoal-400 active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2
+           border border-charcoal-300 text-charcoal-300
+           px-6 py-3 text-sm tracking-widest uppercase font-sans font-medium
+           transition-all duration-200
+           hover:bg-charcoal-300 hover:text-cream-100
+           active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-maroon {
+    @apply inline-flex items-center justify-center gap-2
+           bg-maroon-300 text-cream-100
+           px-6 py-3 text-sm tracking-widest uppercase font-sans font-medium
+           transition-all duration-200
+           hover:bg-maroon-400 active:scale-[0.98]
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2
+           text-charcoal-300
+           px-4 py-2 text-sm font-sans
+           transition-all duration-150
+           hover:text-taupe-300;
+  }
+
+  /* Form inputs */
+  .form-input {
+    @apply w-full border border-beige-200 bg-white
+           px-4 py-3 text-sm font-sans text-charcoal-300
+           placeholder:text-taupe-100
+           focus:outline-none focus:border-taupe-300 focus:ring-1 focus:ring-taupe-200
+           transition-colors duration-150
+           disabled:bg-cream disabled:cursor-not-allowed;
+  }
+
+  .form-label {
+    @apply block text-xs font-sans font-medium tracking-wider uppercase text-charcoal-200 mb-1.5;
+  }
+
+  .form-error {
+    @apply text-red-600 text-xs font-sans mt-1;
+  }
+
+  /* Cards */
+  .card {
+    @apply bg-white border border-beige-200 shadow-soft;
+  }
+
+  /* Section headings */
+  .section-heading {
+    @apply text-3xl md:text-4xl font-serif font-medium text-charcoal-300 text-center;
+  }
+
+  .section-subheading {
+    @apply text-sm tracking-widest uppercase text-taupe-300 text-center font-sans;
+  }
+
+  /* Divider */
+  .ornamental-divider {
+    @apply flex items-center gap-4 my-6;
+  }
+
+  .ornamental-divider::before,
+  .ornamental-divider::after {
+    @apply flex-1 h-px bg-beige-200 content-[''];
+  }
+
+  /* Badge */
+  .badge-sale {
+    @apply bg-maroon-300 text-cream-50 text-[10px] tracking-widest uppercase font-sans font-medium px-2 py-0.5;
+  }
+
+  .badge-new {
+    @apply bg-taupe-300 text-cream-50 text-[10px] tracking-widest uppercase font-sans font-medium px-2 py-0.5;
+  }
+
+  .badge-oos {
+    @apply bg-charcoal-100 text-cream-50 text-[10px] tracking-widest uppercase font-sans font-medium px-2 py-0.5;
+  }
+
+  /* Toast */
+  .toast-base {
+    @apply fixed bottom-4 right-4 z-50 flex items-start gap-3 p-4 shadow-hover max-w-sm w-full animate-slide-up;
+  }
+
+  /* Admin sidebar */
+  .admin-nav-link {
+    @apply flex items-center gap-3 px-4 py-2.5 text-sm font-sans text-charcoal-100
+           hover:bg-cream hover:text-charcoal-300 rounded transition-colors duration-150;
+  }
+
+  .admin-nav-link.active {
+    @apply bg-cream text-charcoal-300 font-medium;
+  }
+
+  /* Product image */
+  .product-image-wrapper {
+    @apply relative overflow-hidden bg-beige-100 aspect-[3/4];
+  }
+
+  .product-image-wrapper img {
+    @apply object-cover w-full h-full transition-transform duration-500;
+  }
+
+  .product-image-wrapper:hover img {
+    @apply scale-105;
+  }
+
+  /* Size button */
+  .size-btn {
+    @apply px-3 py-1.5 text-xs font-sans border border-beige-200 text-charcoal-200
+           hover:border-charcoal-300 hover:text-charcoal-300 transition-colors duration-150
+           disabled:opacity-40 disabled:cursor-not-allowed disabled:line-through;
+  }
+
+  .size-btn.selected {
+    @apply border-charcoal-300 bg-charcoal-300 text-cream-100;
+  }
+
+  /* Skeleton loader */
+  .skeleton {
+    @apply animate-pulse bg-beige-200 rounded;
+  }
+}
+
+/* ─── Utility Layer ─────────────────────────────────────────────── */
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .container-narrow {
+    @apply max-w-4xl mx-auto px-4 sm:px-6;
+  }
+
+  .container-wide {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Hide scrollbar visually but keep functional */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Aspect ratios */
+  .aspect-product {
+    aspect-ratio: 3 / 4;
+  }
+
+  .aspect-hero {
+    aspect-ratio: 16 / 9;
+  }
+}
