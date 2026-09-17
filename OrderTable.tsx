@@ -1,4 +1,4 @@
-﻿import Link from 'next/link'
+import Link from 'next/link'
 import { formatPKR, formatDate } from '@/lib/utils'
 import type { Order } from '@/types'
 
@@ -29,8 +29,15 @@ export default function OrderTable({ orders }: OrderTableProps) {
                   #{o.order_number || o.id.slice(0, 8)}
                 </td>
                 <td className="p-3.5 text-charcoal-200">
-                  <p className="font-medium text-charcoal-300">{o.shipping_name}</p>
-                  <p className="text-[10px] text-taupe-200">{o.shipping_city}, {o.shipping_province}</p>
+                  <p className="font-medium text-charcoal-300">
+                    {o.customer_name}
+                  </p>
+
+                  <p className="text-[10px] text-taupe-200">
+                    {o.city}, {o.province}
+                  </p>
+                  {/* <p className="font-medium text-charcoal-300">{o.customer_name}</p>
+                  <p className="text-[10px] text-taupe-200">{o.city}, {o.province}</p> */}
                 </td>
                 <td className="p-3.5 text-charcoal-200">{formatDate(o.created_at)}</td>
                 <td className="p-3.5 uppercase text-[10px] tracking-wider text-charcoal-300 font-medium">
@@ -42,7 +49,7 @@ export default function OrderTable({ orders }: OrderTableProps) {
                   </span>
                 </td>
                 <td className="p-3.5 font-medium text-charcoal-300">
-                  {formatPKR(o.total_amount)}
+                 {formatPKR(o.total)}
                 </td>
                 <td className="p-3.5 text-right">
                   <Link
@@ -60,3 +67,4 @@ export default function OrderTable({ orders }: OrderTableProps) {
     </div>
   )
 }
+
