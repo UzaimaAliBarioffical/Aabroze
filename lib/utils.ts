@@ -91,20 +91,20 @@ export function buildWhatsAppUrl(phone: string, message: string): string {
 }
 
 /** Calculate delivery charges by province */
-export function getDeliveryCharges(province: string): number {
-  const charges: Record<string, number> = {
-    Punjab: 200,
-    Sindh: 250,
-    'Khyber Pakhtunkhwa': 250,
-    Balochistan: 300,
-    'Islamabad Capital Territory': 200,
-    'Gilgit-Baltistan': 350,
-    'Azad Jammu & Kashmir': 300,
-  }
-  return charges[province] ?? 250
+function shippingSetting(value: string | undefined, fallback: number): number {
+  if (!value?.trim()) return fallback
+  const amount = Number(value)
+  return Number.isFinite(amount) && amount >= 0 ? Math.round(amount * 100) / 100 : fallback
+}
+
+export const DELIVERY_CHARGE = shippingSetting(process.env.NEXT_PUBLIC_DELIVERY_CHARGE, 200)
+export const FREE_SHIPPING_THRESHOLD = shippingSetting(process.env.NEXT_PUBLIC_FREE_SHIPPING_THRESHOLD, 0)
+
+export function getDeliveryCharges(_province?: string): number {
+  return DELIVERY_CHARGE
 }
 
 /** Check free shipping threshold */
-export function isFreeShipping(subtotal: number, threshold = 3000): boolean {
-  return subtotal >= threshold
+export function isFreeShipping(subtotal: number, threshold = FREE_SHIPPING_THRESHOLD): boolean {
+  return threshold > 0 && subtotal >= threshold
 }

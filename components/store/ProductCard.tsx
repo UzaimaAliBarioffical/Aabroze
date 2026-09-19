@@ -13,6 +13,8 @@ import { formatPKR, getDiscountPercent, cn } from '@/lib/utils'
 import { getCollectionImage, getProductImage } from '@/lib/collection-images'
 import { isRealPurchasableProduct } from '@/lib/pricing'
 import type { CartItem, Product } from '@/types'
+import { saveBuyNow } from '@/lib/cart'
+import toast from 'react-hot-toast'
 
 interface ProductCardProps {
   product: Product
@@ -72,9 +74,13 @@ export default function ProductCard({ product }: ProductCardProps) {
   const handleConfirm = (item: CartItem) => {
     if (intent === 'buy-now') {
       setPending('buy-now')
-      addCartItem(item, { openDrawer: false })
+      if (!saveBuyNow(item)) {
+        toast.error('Please enable browser storage to use Buy Now')
+        setPending(null)
+        return
+      }
       setModalOpen(false)
-      router.push('/checkout')
+      router.push('/checkout?mode=buy-now')
       return
     }
     setPending('cart')

@@ -1,7 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { after, NextRequest, NextResponse } from 'next/server'
+import { deliverOrderEmails } from '@/lib/order-emails'
+import { sendOwnerWhatsAppNotification } from '@/lib/whatsapp'
 import { placeStoreOrder } from '@/lib/create-order'
 import { getClientIp, RATE_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request.headers)
@@ -48,9 +53,18 @@ export async function POST(request: NextRequest) {
     })
 
     if (!result.success) {
-      return NextResponse.json({ success: false, error: result.error }, { status: 400 })
+      return NextResponse.json({ success: false, error: result.error }, { status: result.retryable ? 503 : 400 })
     }
 
+    const order = result.order!
+    after(async () => {
+      try { await deliverOrderEmails(order.id) }
+      catch { console.error('[email] Queue processing unavailable') }
+      if (!result.duplicate) {
+        try { await sendOwnerWhatsAppNotification(order) }
+        catch { console.error('[orders] WhatsApp notification failed') }
+      }
+    })
     return NextResponse.json({
       success: true,
       duplicate: result.duplicate ?? false,
@@ -60,8 +74,8 @@ export async function POST(request: NextRequest) {
         total: result.order?.total,
       },
     })
-  } catch (err) {
-    console.error('[api/orders]', err)
+  } catch {
+    console.error('[api/orders] Order request failed')
     return NextResponse.json(
       { success: false, error: 'Unable to place order. Please try again.' },
       { status: 500 }

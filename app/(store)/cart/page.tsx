@@ -4,12 +4,14 @@ import Link from 'next/link'
 import SafeImage from '@/components/ui/SafeImage'
 import Button from '@/components/ui/Button'
 import { useCart } from '@/context/CartContext'
-import { formatPKR } from '@/lib/utils'
+import { formatPKR, getDeliveryCharges, isFreeShipping } from '@/lib/utils'
 import { Minus, Plus, Trash2, ArrowRight } from 'lucide-react'
 import { getCollectionImage } from '@/lib/collection-images'
 
 export default function CartPage() {
-  const { items, removeItem, updateQuantity, clearCart, subtotal, itemCount } = useCart()
+  const { items, removeItem, updateQuantity, clearCart, subtotal, itemCount, ready } = useCart()
+  const delivery = isFreeShipping(subtotal) ? 0 : getDeliveryCharges()
+  if (!ready) return <p className="container-narrow py-20">Loading your bag…</p>
 
   if (items.length === 0) {
     return (
@@ -56,6 +58,7 @@ export default function CartPage() {
                     </Link>
                     <button
                       onClick={() => removeItem(item.product_id, item.variant_id)}
+                      aria-label={`Remove ${item.name} ${item.size}`}
                       className="text-taupe-200 hover:text-maroon-300 p-1"
                     >
                       <Trash2 size={16} />
@@ -71,6 +74,7 @@ export default function CartPage() {
                   <div className="flex items-center border border-beige-200 bg-white">
                     <button
                       onClick={() => updateQuantity(item.product_id, item.variant_id, item.quantity - 1)}
+                      aria-label="Decrease quantity"
                       className="p-1.5 text-charcoal-200 hover:text-charcoal-300"
                     >
                       <Minus size={14} />
@@ -78,6 +82,8 @@ export default function CartPage() {
                     <span className="px-3 text-xs font-sans text-charcoal-300">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.product_id, item.variant_id, item.quantity + 1)}
+                      aria-label="Increase quantity"
+                      disabled={item.quantity >= Math.min(item.stock ?? 10, 10)}
                       className="p-1.5 text-charcoal-200 hover:text-charcoal-300"
                     >
                       <Plus size={14} />
@@ -108,12 +114,12 @@ export default function CartPage() {
             </div>
             <div className="flex justify-between pt-2">
               <span>Estimated Delivery</span>
-              <span className="text-taupe-300">Calculated at checkout</span>
+              <span className="text-taupe-300">{delivery === 0 ? 'FREE' : formatPKR(delivery)}</span>
             </div>
           </div>
           <div className="border-t border-beige-200 pt-4 flex justify-between items-center">
             <span className="font-serif text-base text-charcoal-300">Total</span>
-            <span className="font-serif text-xl text-charcoal-300">{formatPKR(subtotal)}</span>
+            <span className="font-serif text-xl text-charcoal-300">{formatPKR(subtotal + delivery)}</span>
           </div>
           <Link href="/checkout" className="block pt-2">
             <Button className="w-full flex items-center justify-center gap-2" size="lg">
@@ -121,7 +127,7 @@ export default function CartPage() {
             </Button>
           </Link>
           <p className="text-[11px] text-center text-taupe-300 font-sans">
-            Taxes included. Cash on delivery and card/wallet options supported.
+            Payment method: Cash on Delivery.
           </p>
         </div>
       </div>

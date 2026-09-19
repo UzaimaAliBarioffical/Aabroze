@@ -4,12 +4,13 @@ import Link from 'next/link'
 import SafeImage from '@/components/ui/SafeImage'
 import { X, Minus, Plus, ShoppingBag } from 'lucide-react'
 import { useCart } from '@/context/CartContext'
-import { formatPKR } from '@/lib/utils'
+import { formatPKR, getDeliveryCharges, isFreeShipping } from '@/lib/utils'
 import { useEffect } from 'react'
 import { getCollectionImage } from '@/lib/collection-images'
 
 export default function CartDrawer() {
   const { items, isOpen, closeCart, removeItem, updateQuantity, subtotal, itemCount } = useCart()
+  const delivery = isFreeShipping(subtotal) ? 0 : getDeliveryCharges()
 
   useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden'
@@ -34,6 +35,8 @@ export default function CartDrawer() {
         role="dialog"
         aria-modal
         aria-label="Shopping cart"
+        aria-hidden={!isOpen}
+        inert={!isOpen}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-beige-200">
@@ -95,6 +98,7 @@ export default function CartDrawer() {
                           onClick={() => updateQuantity(item.product_id, item.variant_id, item.quantity + 1)}
                           className="px-2 py-1 text-charcoal-200 hover:text-charcoal-300 transition-colors"
                           aria-label="Increase quantity"
+                          disabled={item.quantity >= Math.min(item.stock ?? 10, 10)}
                         >
                           <Plus size={12} />
                         </button>
@@ -120,7 +124,8 @@ export default function CartDrawer() {
               <span className="font-sans text-sm text-charcoal-200">Subtotal</span>
               <span className="font-serif text-xl text-charcoal-300">{formatPKR(subtotal)}</span>
             </div>
-            <p className="text-xs text-taupe-200 font-sans">Shipping calculated at checkout</p>
+            <p className="text-xs text-taupe-200 font-sans">Delivery: {delivery === 0 ? 'FREE' : formatPKR(delivery)}</p>
+            <p className="text-sm font-sans">Grand total: {formatPKR(subtotal + delivery)}</p>
             <Link
               href="/checkout"
               onClick={closeCart}

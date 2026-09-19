@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import Modal from '@/components/ui/Modal'
 
@@ -29,38 +29,38 @@ export default function SizeGuide({ isOpen, onClose }: SizeGuideProps) {
             <tbody className="divide-y divide-beige-100">
               <tr>
                 <td className="p-2.5 font-medium text-charcoal-300">XS</td>
-                <td className="p-2.5 text-charcoal-200">36"</td>
-                <td className="p-2.5 text-charcoal-200">32"</td>
-                <td className="p-2.5 text-charcoal-200">38"</td>
-                <td className="p-2.5 text-charcoal-200">39"</td>
+                <td className="p-2.5 text-charcoal-200">36&quot;</td>
+                <td className="p-2.5 text-charcoal-200">32&quot;</td>
+                <td className="p-2.5 text-charcoal-200">38&quot;</td>
+                <td className="p-2.5 text-charcoal-200">39&quot;</td>
               </tr>
               <tr>
                 <td className="p-2.5 font-medium text-charcoal-300">S</td>
-                <td className="p-2.5 text-charcoal-200">38"</td>
-                <td className="p-2.5 text-charcoal-200">34"</td>
-                <td className="p-2.5 text-charcoal-200">40"</td>
-                <td className="p-2.5 text-charcoal-200">40"</td>
+                <td className="p-2.5 text-charcoal-200">38&quot;</td>
+                <td className="p-2.5 text-charcoal-200">34&quot;</td>
+                <td className="p-2.5 text-charcoal-200">40&quot;</td>
+                <td className="p-2.5 text-charcoal-200">40&quot;</td>
               </tr>
               <tr>
                 <td className="p-2.5 font-medium text-charcoal-300">M</td>
-                <td className="p-2.5 text-charcoal-200">41"</td>
-                <td className="p-2.5 text-charcoal-200">37"</td>
-                <td className="p-2.5 text-charcoal-200">43"</td>
-                <td className="p-2.5 text-charcoal-200">41"</td>
+                <td className="p-2.5 text-charcoal-200">41&quot;</td>
+                <td className="p-2.5 text-charcoal-200">37&quot;</td>
+                <td className="p-2.5 text-charcoal-200">43&quot;</td>
+                <td className="p-2.5 text-charcoal-200">41&quot;</td>
               </tr>
               <tr>
                 <td className="p-2.5 font-medium text-charcoal-300">L</td>
-                <td className="p-2.5 text-charcoal-200">44"</td>
-                <td className="p-2.5 text-charcoal-200">40"</td>
-                <td className="p-2.5 text-charcoal-200">46"</td>
-                <td className="p-2.5 text-charcoal-200">42"</td>
+                <td className="p-2.5 text-charcoal-200">44&quot;</td>
+                <td className="p-2.5 text-charcoal-200">40&quot;</td>
+                <td className="p-2.5 text-charcoal-200">46&quot;</td>
+                <td className="p-2.5 text-charcoal-200">42&quot;</td>
               </tr>
               <tr>
                 <td className="p-2.5 font-medium text-charcoal-300">XL</td>
-                <td className="p-2.5 text-charcoal-200">47"</td>
-                <td className="p-2.5 text-charcoal-200">43"</td>
-                <td className="p-2.5 text-charcoal-200">49"</td>
-                <td className="p-2.5 text-charcoal-200">42"</td>
+                <td className="p-2.5 text-charcoal-200">47&quot;</td>
+                <td className="p-2.5 text-charcoal-200">43&quot;</td>
+                <td className="p-2.5 text-charcoal-200">49&quot;</td>
+                <td className="p-2.5 text-charcoal-200">42&quot;</td>
               </tr>
             </tbody>
           </table>

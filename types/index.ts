@@ -72,6 +72,7 @@ export interface ProductVariant {
 
 // ─── Cart ─────────────────────────────────────────────────────────
 export interface CartItem {
+  stock?: number
   product_id: string
   variant_id: string
   name: string

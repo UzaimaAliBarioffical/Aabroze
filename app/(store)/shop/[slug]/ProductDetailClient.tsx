@@ -5,7 +5,9 @@ import SafeImage from '@/components/ui/SafeImage'
 import Button from '@/components/ui/Button'
 import SizeGuide from '@/components/store/SizeGuide'
 import { formatPKR, getDiscountPercent } from '@/lib/utils'
-import { getVariantUnitPrice, sortVariants } from '@/lib/pricing'
+import { getVariantUnitPrice, isUuid, sortVariants } from '@/lib/pricing'
+import { saveBuyNow } from '@/lib/cart'
+import toast from 'react-hot-toast'
 import { useCart } from '@/context/CartContext'
 import { useWishlist } from '@/context/WishlistContext'
 import { Heart, Truck, RotateCcw, ShieldCheck } from 'lucide-react'
@@ -30,25 +32,33 @@ export default function ProductDetailClient({ product }: { product: Product }) {
     ? product.images
     : [{ id: product.id, url: primaryImage }]
 
-  const effectivePrice = product.sale_price ?? product.price
-  const discount = product.sale_price ? getDiscountPercent(product.price, product.sale_price) : 0
+  const selectedVariant = product.variants?.find((v) => v.size === selectedSize)
+  const effectivePrice = getVariantUnitPrice(product, selectedVariant)
+  const discount = selectedVariant?.price == null && product.sale_price ? getDiscountPercent(product.price, product.sale_price) : 0
+  const maxQuantity = Math.min(selectedVariant?.stock ?? 0, 10)
+  const canPurchase = !!selectedVariant && isUuid(product.id) && isUuid(selectedVariant.id) && maxQuantity > 0
 
-  const handleAddToCart = () => {
+  const handleAddToCart = (buyNow = false) => {
     if (!selectedSize) return
     const variant = product.variants?.find((v) => v.size === selectedSize)
-    if (!variant) return
+    if (!variant || !canPurchase || quantity > maxQuantity) return
 
-    addItem({
+    const item = {
       product_id: product.id,
       variant_id: variant.id,
       name: product.name,
       slug: product.slug,
-      price: product.price,
-      sale_price: product.sale_price,
+      price: effectivePrice,
+      sale_price: null,
       size: selectedSize,
       image_url: primaryImage,
       quantity,
-    })
+      stock: variant.stock,
+    }
+    if (buyNow) {
+      if (!saveBuyNow(item)) { toast.error('Please enable browser storage to use Buy Now'); return }
+      router.push('/checkout?mode=buy-now')
+    } else addItem(item)
   }
 
   const handleWishlistToggle = () => {
@@ -111,7 +121,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               <span className="text-xl md:text-2xl font-sans font-medium text-charcoal-300">
                 {formatPKR(effectivePrice)}
               </span>
-              {product.sale_price && (
+              {discount > 0 && (
                 <span className="text-sm font-sans text-taupe-200 line-through">
                   {formatPKR(product.price)}
                 </span>
@@ -147,13 +157,15 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               </button>
             </div>
             <div className="flex flex-wrap gap-2">
-              {product.variants?.map((v) => {
-                const available = v.stock > 0
+              {sortVariants(product.variants ?? []).map((v) => {
+                const available = v.stock > 0 && isUuid(v.id)
                 return (
                   <button
                     key={v.id}
                     disabled={!available}
-                    onClick={() => setSelectedSize(v.size)}
+                    onClick={() => { setSelectedSize(v.size); setQuantity(1) }}
+                    aria-pressed={selectedSize === v.size}
+                    title={available ? formatPKR(getVariantUnitPrice(product, v)) : 'Out of stock'}
                     className={`size-btn ${selectedSize === v.size ? 'selected' : ''}`}
                   >
                     {v.size}
@@ -164,10 +176,18 @@ export default function ProductDetailClient({ product }: { product: Product }) {
           </div>
 
           {/* Actions */}
+          <div className="space-y-2 text-xs font-sans text-charcoal-200">
+            <p>{selectedVariant ? (maxQuantity > 0 ? `${selectedVariant.stock} in stock` : 'Out of stock') : 'Select an available size'}</p>
+            <label className="flex items-center gap-3">Quantity
+              <input type="number" min={1} max={maxQuantity || 1} value={quantity} disabled={!canPurchase}
+                onChange={(event) => setQuantity(Math.max(1, Math.min(maxQuantity, Math.floor(Number(event.target.value) || 1))))}
+                className="w-20 border border-beige-200 p-2" />
+            </label>
+          </div>
           <div className="flex gap-3 pt-2">
             <Button
-              onClick={handleAddToCart}
-              disabled={!selectedSize}
+              onClick={() => handleAddToCart()}
+              disabled={!canPurchase}
               className="flex-1"
               size="lg"
             >
@@ -184,6 +204,7 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               />
             </button>
           </div>
+          <Button className="w-full" size="lg" disabled={!canPurchase} onClick={() => handleAddToCart(true)}>Buy Now</Button>
 
           {/* Reassurance Features */}
           <div className="pt-4 grid grid-cols-3 gap-2 border-t border-beige-200 text-center">

@@ -82,7 +82,8 @@ export default function VariantSelectModal({
           ? null
           : product.sale_price,
       image_url: image,
-      quantity: qty,
+      quantity: Math.floor(qty),
+      stock: selectedVariant.stock,
     }
 
     onConfirm(item)

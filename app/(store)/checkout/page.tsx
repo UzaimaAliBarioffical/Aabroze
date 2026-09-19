@@ -1,30 +1,48 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import SafeImage from '@/components/ui/SafeImage'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import Textarea from '@/components/ui/Textarea'
 import { useCart } from '@/context/CartContext'
-import { checkoutSchema } from '@/lib/zod-schemas'
+import { checkoutSchema, type CheckoutInput } from '@/lib/zod-schemas'
+import { BUY_NOW_KEY, readCart } from '@/lib/cart'
 import { formatPKR, getDeliveryCharges, isFreeShipping } from '@/lib/utils'
 import { getCollectionImage } from '@/lib/collection-images'
 import { PAKISTAN_PROVINCES } from '@/types'
 import { STORE_PHONE_LOCAL, STORE_PHONE_TEL, storeWhatsAppUrl } from '@/lib/store-contact'
-import type { PaymentMethod } from '@/types'
+import type { CartItem, PaymentMethod } from '@/types'
 
 type FieldErrors = Record<string, string>
 
 export default function CheckoutPage() {
+  return <Suspense fallback={<p className="container-narrow py-20">Loading checkout…</p>}><CheckoutContent /></Suspense>
+}
+
+type PendingCheckout = { customer: CheckoutInput; items: CartItem[] }
+
+function CheckoutContent() {
   const router = useRouter()
-  const { items, subtotal, clearCart, closeCart } = useCart()
+  const search = useSearchParams()
+  const buyNow = search.get('mode') === 'buy-now'
+  const receiptKey = search.get('order')
+  const pendingKey = buyNow ? 'aabroze_pending_direct' : 'aabroze_pending_cart'
+  const { items: cartItems, removePurchased, closeCart, ready } = useCart()
+  const [directItems, setDirectItems] = useState<CartItem[]>([])
+  const [pending, setPending] = useState<PendingCheckout | null>(null)
+  const [initialized, setInitialized] = useState(false)
+  const submitLock = useRef(false)
+  const items = pending?.items ?? (buyNow ? directItems : cartItems)
+  const subtotal = items.reduce((sum, item) => sum + (item.sale_price ?? item.price) * item.quantity, 0)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
   const [successNumber, setSuccessNumber] = useState<string | null>(null)
+  const [successTotal, setSuccessTotal] = useState<number | null>(null)
   const [idempotencyKey, setIdempotencyKey] = useState('')
 
   const [form, setForm] = useState({
@@ -43,7 +61,28 @@ export default function CheckoutPage() {
   useEffect(() => {
     closeCart()
     setIdempotencyKey(crypto.randomUUID())
-  }, [closeCart])
+    setPending(null)
+    setSuccessNumber(null)
+    try {
+      if (buyNow) setDirectItems(readCart(sessionStorage.getItem(BUY_NOW_KEY)))
+      const saved = JSON.parse(sessionStorage.getItem(pendingKey) || 'null')
+      const customer = checkoutSchema.safeParse(saved?.customer)
+      const savedItems = readCart(JSON.stringify(saved?.items ?? []))
+      if (customer.success && savedItems.length) {
+        setPending({ customer: customer.data, items: savedItems })
+        setForm({ ...customer.data, whatsapp: customer.data.whatsapp ?? '', postal_code: customer.data.postal_code ?? '', order_notes: customer.data.order_notes ?? '' })
+        setIdempotencyKey(customer.data.idempotency_key)
+      }
+      if (receiptKey) {
+        const receipt = JSON.parse(sessionStorage.getItem(`aabroze_receipt_${receiptKey}`) || 'null')
+        if (typeof receipt?.number === 'string' && typeof receipt?.total === 'number') {
+          setSuccessNumber(receipt.number)
+          setSuccessTotal(receipt.total)
+        }
+      }
+    } catch { /* Unavailable or invalid browser storage. */ }
+    setInitialized(true)
+  }, [closeCart, buyNow, pendingKey, receiptKey])
 
   const delivery = isFreeShipping(subtotal) ? 0 : getDeliveryCharges(form.province)
   const total = subtotal + delivery
@@ -60,6 +99,7 @@ export default function CheckoutPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (submitLock.current || !initialized || !ready) return
     setFormError('')
 
     if (items.length === 0) {
@@ -67,7 +107,7 @@ export default function CheckoutPage() {
       return
     }
 
-    const parsed = checkoutSchema.safeParse({
+    const parsed = checkoutSchema.safeParse(pending?.customer ?? {
       ...form,
       idempotency_key: idempotencyKey,
     })
@@ -83,14 +123,19 @@ export default function CheckoutPage() {
       return
     }
 
+    const attempt: PendingCheckout = pending ?? { customer: parsed.data, items: [...items] }
+    try { sessionStorage.setItem(pendingKey, JSON.stringify(attempt)) }
+    catch { setFormError('Please enable browser storage so your order can be retried safely.'); return }
+    setPending(attempt)
+    submitLock.current = true
     setSubmitting(true)
     try {
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customer: parsed.data,
-          items: items.map((item) => ({
+          customer: attempt.customer,
+          items: attempt.items.map((item) => ({
             product_id: item.product_id,
             variant_id: item.variant_id,
             quantity: item.quantity,
@@ -100,26 +145,42 @@ export default function CheckoutPage() {
       const result = await response.json()
       if (!response.ok || !result.success) {
         setFormError(result.error || 'Could not place order')
+        if (response.status === 400) {
+          setPending(null)
+          setIdempotencyKey(crypto.randomUUID())
+          try { sessionStorage.removeItem(pendingKey) } catch { /* Keep UI usable. */ }
+        }
         return
       }
-      setSuccessNumber(result.data?.order_number ?? 'your order')
-      clearCart()
+      setSuccessNumber(result.data.order_number)
+      setSuccessTotal(result.data.total)
+      if (!buyNow) removePurchased(attempt.items)
+      setPending(null)
+      try {
+        sessionStorage.setItem(`aabroze_receipt_${attempt.customer.idempotency_key}`, JSON.stringify({ number: result.data.order_number, total: result.data.total }))
+        sessionStorage.removeItem(pendingKey)
+        if (buyNow) sessionStorage.removeItem(BUY_NOW_KEY)
+        router.replace(`/checkout?order=${attempt.customer.idempotency_key}`)
+      } catch { /* The order is saved even if receipt storage is unavailable. */ }
     } catch {
-      setFormError('Network error. Your order was not submitted twice — please try again.')
+      setFormError('We could not confirm the response. Retry this checkout to safely recover your order without placing it twice.')
     } finally {
       setSubmitting(false)
+      submitLock.current = false
     }
   }
 
   if (successNumber) {
     return (
       <div className="container-narrow py-16 md:py-24 text-center space-y-4">
-        <p className="section-subheading">Thank you</p>
-        <h1 className="section-heading">Order Confirmed</h1>
+        <p className="section-subheading">Thank you for shopping with AABROZE!</p>
+        <h1 className="section-heading">Your order has been placed successfully.</h1>
         <p className="text-sm font-sans text-charcoal-200">
           Your order <strong className="text-charcoal-300">{successNumber}</strong> has been received.
           We will contact you shortly to confirm delivery.
         </p>
+        <p className="text-sm font-sans">Payment Method: Cash on Delivery</p>
+        {successTotal !== null && <p className="text-sm font-sans">Grand total: {formatPKR(successTotal)}</p>}
         <p className="text-xs font-sans text-taupe-200">
           Questions? Call{' '}
           <a href={STORE_PHONE_TEL} className="underline">
@@ -140,6 +201,8 @@ export default function CheckoutPage() {
     )
   }
 
+  if (!ready || !initialized) return <p className="container-narrow py-20">Loading checkout…</p>
+
   if (items.length === 0) {
     return (
       <div className="container-narrow py-20 text-center space-y-4">
@@ -159,6 +222,9 @@ export default function CheckoutPage() {
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-5 gap-10 items-start" noValidate>
         <div className="lg:col-span-3 space-y-5 bg-white border border-beige-200 p-5 sm:p-8">
+          <p className="text-xs font-sans">Delivery country: Pakistan</p>
+          {pending && <p className="text-xs font-sans" role="status">Your checkout details are saved. Retry to confirm this same order.</p>}
+          <fieldset disabled={submitting || pending !== null} className="space-y-5">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Input
               label="Full Name *"
@@ -192,7 +258,7 @@ export default function CheckoutPage() {
               required
             />
             <Input
-              label="WhatsApp Number"
+              label="Alternate Phone Number"
               name="whatsapp"
               type="tel"
               value={form.whatsapp}
@@ -255,8 +321,6 @@ export default function CheckoutPage() {
             <legend className="form-label">Payment Method *</legend>
             {[
               { id: 'cod', label: 'Cash on Delivery' },
-              { id: 'jazzcash', label: 'JazzCash' },
-              { id: 'easypaisa', label: 'Easypaisa' },
             ].map((method) => (
               <label key={method.id} className="flex items-center gap-3 text-sm font-sans text-charcoal-300 border border-beige-200 px-4 py-3 cursor-pointer">
                 <input
@@ -272,11 +336,12 @@ export default function CheckoutPage() {
             ))}
             {errors.payment_method && <p className="form-error">{errors.payment_method}</p>}
           </fieldset>
+          </fieldset>
 
-          {formError && <p className="form-error">{formError}</p>}
+          {formError && <p className="form-error" role="alert">{formError}</p>}
 
           <Button type="submit" className="w-full" size="lg" loading={submitting} disabled={submitting}>
-            Place Order
+            {pending ? 'Retry / Confirm Order' : 'Place Order'}
           </Button>
 
           <p className="text-[11px] text-taupe-200 font-sans text-center">
@@ -318,6 +383,7 @@ export default function CheckoutPage() {
                   <p className="text-xs font-sans text-charcoal-300 mt-1">
                     {formatPKR(item.sale_price ?? item.price)} each
                   </p>
+                  <p className="text-xs font-sans">Line total: {formatPKR((item.sale_price ?? item.price) * item.quantity)}</p>
                 </div>
               </li>
             ))}
@@ -336,7 +402,7 @@ export default function CheckoutPage() {
               <span>{formatPKR(total)}</span>
             </div>
             <p className="text-[11px] text-taupe-200">
-              Final total is confirmed securely on our server from live product prices.
+              Payment is due when your order is delivered.
             </p>
           </div>
         </aside>

@@ -4,6 +4,7 @@ import { z } from 'zod'
 export const checkoutSchema = z.object({
   full_name: z
     .string()
+    .trim()
     .min(2, 'Name must be at least 2 characters')
     .max(100, 'Name too long')
     .trim(),
@@ -37,9 +38,10 @@ export const checkoutSchema = z.object({
     ],
     { errorMap: () => ({ message: 'Select a valid province' }) }
   ),
-  city: z.string().min(2, 'Enter your city').max(100).trim(),
+  city: z.string().trim().min(2, 'Enter your city').max(100),
   address: z
     .string()
+    .trim()
     .min(10, 'Enter a complete address')
     .max(500)
     .trim(),
@@ -49,7 +51,7 @@ export const checkoutSchema = z.object({
     .optional()
     .or(z.literal('')),
   order_notes: z.string().max(500).optional().or(z.literal('')),
-  payment_method: z.enum(['cod', 'jazzcash', 'easypaisa'], {
+  payment_method: z.enum(['cod'], {
     errorMap: () => ({ message: 'Select a payment method' }),
   }),
   idempotency_key: z
@@ -70,6 +72,8 @@ export type CartItemInput = z.infer<typeof cartItemSchema>
 
 // ─── Checkout Cart ────────────────────────────────────────────────
 export const checkoutCartSchema = z.array(cartItemSchema).min(1, 'Cart is empty').max(50)
+  .refine((items) => new Set(items.map((item) => item.variant_id)).size === items.length,
+    'Each size must appear only once in your cart')
 
 // ─── Newsletter ───────────────────────────────────────────────────
 export const newsletterSchema = z.object({
