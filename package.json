@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "node scripts/prepare-next-cache.cjs",
+    "prebuild": "node scripts/prepare-next-cache.cjs",
+    "prestart": "node scripts/prepare-next-cache.cjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
