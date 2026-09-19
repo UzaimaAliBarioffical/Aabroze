@@ -9,9 +9,9 @@ async function createDatabase() {
     create role anon; create role authenticated; create role service_role bypassrls;
     create schema auth;
     create table auth.users (id uuid primary key, email text, raw_user_meta_data jsonb);
-    create function auth.uid() returns uuid language sql as $$ select null::uuid $$;
+    create function auth.uid() returns uuid language sql as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   `)
-  for (const file of ['001_initial_schema.sql', '002_variant_price.sql', '003_atomic_checkout.sql']) {
+  for (const file of ['001_initial_schema.sql', '002_variant_price.sql', '003_atomic_checkout.sql', '004_admin_order_management.sql']) {
     const sql = readFileSync(path.join(__dirname, '../supabase/migrations', file), 'utf8')
     await db.exec(sql)
   }
@@ -22,7 +22,8 @@ const smallId = '20000000-0000-4000-8000-000000000001'
 const mediumId = '20000000-0000-4000-8000-000000000002'
 const largeId = '20000000-0000-4000-8000-000000000003'
 async function seed(db) {
-  await db.query(`insert into products (id,name,slug,price,sale_price,is_published) values ($1,'Test Lawn Suit','test-lawn-suit',2500,2200,true)`, [productId])
+  await db.query(`insert into products (id,name,slug,price,sale_price,is_published,is_new_arrival,category_id)
+    values ($1,'Test Lawn Suit','test-lawn-suit',2500,2200,true,true,(select id from categories where slug='casual-wear'))`, [productId])
   await db.query(`insert into product_variants (id,product_id,size,stock,price) values
     ($1,$4,'S',5,2700), ($2,$4,'M',5,null), ($3,$4,'L',0,2900)`, [smallId,mediumId,largeId,productId])
 }

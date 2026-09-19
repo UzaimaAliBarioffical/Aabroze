@@ -1,5 +1,7 @@
 The existing AABROZE storefront now has an integrated COD shopping flow. The logo, colours, typography, header, footer, homepage and collections remain in place. Live deployment still requires Supabase and SMTP configuration; no real email delivery has been verified.
 
+Follow-up order audit: admin login, order list/detail and transactional fulfillment are now connected using the existing components. See `ORDER-SYSTEM-CHECK.md` for current setup, migration 004 and end-to-end verification; the earlier implementation history below predates this admin integration.
+
 1. Existing functionality reused
 
    App Router pages, product loaders, product/variant/image tables, size pricing rules, VariantSelectModal, CartContext, cart drawer, checkout inputs, Supabase clients, order/item/payment tables, Zod validation, Nodemailer, toasts and optional WhatsApp notifications.

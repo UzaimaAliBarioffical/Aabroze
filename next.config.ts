@@ -43,6 +43,8 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // SMTP uses Node's transport modules; keep the mailer out of the server bundle.
+  serverExternalPackages: ['nodemailer'],
   images: {
     remotePatterns: [
       {

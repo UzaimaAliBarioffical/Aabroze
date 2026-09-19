@@ -67,6 +67,8 @@ test('atomic database checkout: trusted price, replay, rollback, stock, access c
   assert.ok(!email.html.includes('<img src=x'))
   assert.equal(email.subject, `New AABROZE Order - ${result.order.order_number}`)
   assert.match(buildOrderEmail(result.order, false).text, /Payment is due on delivery/)
+  assert.match(buildOrderEmail({ ...result.order, status: 'delivered', payment_status: 'paid' }, false).text, /Payment has been received/)
+  assert.match(buildOrderEmail({ ...result.order, status: 'cancelled' }, false).text, /No payment is due/)
   const oldUser = process.env.EMAIL_USER
   delete process.env.EMAIL_USER
   try { await assert.rejects(sendOwnerOrderNotification(result.order), /SMTP_NOT_CONFIGURED/) }

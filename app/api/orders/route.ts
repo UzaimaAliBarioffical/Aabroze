@@ -4,6 +4,7 @@ import { sendOwnerWhatsAppNotification } from '@/lib/whatsapp'
 import { placeStoreOrder } from '@/lib/create-order'
 import { getClientIp, RATE_LIMITS, rateLimit } from '@/lib/rate-limit'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
+import { SupabaseConfigurationError } from '@/lib/supabase/config'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -74,7 +75,14 @@ export async function POST(request: NextRequest) {
         total: result.order?.total,
       },
     })
-  } catch {
+  } catch (error) {
+    if (error instanceof SupabaseConfigurationError) {
+      console.warn(`[checkout] ${error.message}`)
+      return NextResponse.json(
+        { success: false, error: 'Checkout is temporarily unavailable. Your bag has been preserved. Please try again later.' },
+        { status: 503 }
+      )
+    }
     console.error('[api/orders] Order request failed')
     return NextResponse.json(
       { success: false, error: 'Unable to place order. Please try again.' },

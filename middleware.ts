@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { getSupabasePublicConfig, SupabaseConfigurationError } from '@/lib/supabase/config'
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
@@ -20,15 +21,22 @@ export async function middleware(request: NextRequest) {
     request: { headers: request.headers },
   })
 
+  let publicConfig
+  try {
+    publicConfig = getSupabasePublicConfig()
+  } catch (error) {
+    if (!(error instanceof SupabaseConfigurationError)) throw error
+    return new NextResponse('Admin access is temporarily unavailable.', { status: 503 })
+  }
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    publicConfig.url,
+    publicConfig.anonKey,
     {
       cookies: {
         getAll() {
           return request.cookies.getAll()
         },
-        setAll(cookiesToSet: Array<{ name: string; value: string; options?: any }>) {
+        setAll(cookiesToSet: Array<{ name: string; value: string; options: CookieOptions }>) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
           response = NextResponse.next({ request: { headers: request.headers } })
           cookiesToSet.forEach(({ name, value, options }) =>

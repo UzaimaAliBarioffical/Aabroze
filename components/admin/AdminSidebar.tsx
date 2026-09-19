@@ -1,19 +1,19 @@
-﻿import Link from 'next/link'
+'use client'
+
+import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, LogOut } from 'lucide-react'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
 ]
 
 export default function AdminSidebar() {
   const pathname = usePathname()
 
   return (
-    <aside className="w-64 bg-charcoal-400 text-cream flex flex-col min-h-screen border-r border-charcoal-300">
+    <aside className="w-full md:w-64 md:shrink-0 bg-charcoal-400 text-cream flex flex-col md:min-h-screen border-r border-charcoal-300">
       <div className="p-6 border-b border-charcoal-300">
         <span className="font-serif text-2xl tracking-[0.2em] text-cream-100">AABROZE</span>
         <p className="text-[10px] tracking-widest uppercase text-taupe-200 mt-1">Management Portal</p>

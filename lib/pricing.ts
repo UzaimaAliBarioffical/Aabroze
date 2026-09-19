@@ -33,6 +33,18 @@ export function isRealPurchasableProduct(product: Product): boolean {
   return variants.some((v) => isUuid(v.id) && isUuid(v.product_id || product.id))
 }
 
+/** Display the prices a shopper can actually select without changing catalog values. */
+export function getProductPriceRange(product: Product) {
+  const variants = product.variants ?? []
+  const available = variants.filter(variant => variant.stock > 0)
+  const displayed = available.length ? available : variants
+  const prices = displayed.length
+    ? displayed.map(variant => getVariantUnitPrice(product, variant))
+    : [getVariantUnitPrice(product)]
+  return { min: Math.min(...prices), max: Math.max(...prices),
+    hasVariantPrices: displayed.some(variant => variant.price != null) }
+}
+
 const SIZE_RANK: Record<string, number> = {
   xs: 0,
   s: 1,

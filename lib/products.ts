@@ -1,5 +1,21 @@
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Category, Product } from '@/types'
+import { unstable_rethrow } from 'next/navigation'
+import { SupabaseConfigurationError } from '@/lib/supabase/config'
+
+let configurationWarningShown = false
+function reportLoadError(scope: string, error: unknown) {
+  // Preserve Next.js dynamic rendering signals instead of caching an empty catalog.
+  unstable_rethrow(error)
+  if (error instanceof SupabaseConfigurationError) {
+    if (!configurationWarningShown) {
+      console.warn(`[store] ${error.message} Live catalog unavailable until configured.`)
+      configurationWarningShown = true
+    }
+    return
+  }
+  console.error(`[${scope}] Catalog request failed. Check Supabase connectivity and configuration.`)
+}
 
 export const PRODUCT_LIST_SELECT =
   '*, images:product_images(*), variants:product_variants(*)'
@@ -33,7 +49,7 @@ export async function fetchPublishedProducts(options?: {
     }
     return (data as Product[]) ?? []
   } catch (err) {
-    console.error('[products] Unexpected error loading products:', err)
+    reportLoadError('products', err)
     return []
   }
 }
@@ -55,7 +71,7 @@ export async function fetchPublishedProductBySlug(slug: string): Promise<Product
     }
     return (data as Product) ?? null
   } catch (err) {
-    console.error('[products] Unexpected error loading product:', err)
+    reportLoadError('products', err)
     return null
   }
 }
@@ -75,7 +91,7 @@ export async function fetchActiveCategories(): Promise<Category[]> {
     }
     return (data as Category[]) ?? []
   } catch (err) {
-    console.error('[categories] Unexpected error loading categories:', err)
+    reportLoadError('categories', err)
     return []
   }
 }

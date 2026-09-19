@@ -12,6 +12,11 @@ export function escapeHtml(value: unknown): string {
 export function buildOrderEmail(order: EmailOrder, owner: boolean) {
   const title = owner ? 'AABROZE — NEW ORDER' : 'Thank you for shopping with AABROZE.'
   const date = new Date(order.created_at).toLocaleString('en-PK', { timeZone: 'Asia/Karachi' })
+  const paymentNotice = order.status === 'cancelled'
+    ? 'This order has been cancelled. No payment is due on delivery.'
+    : order.payment_status === 'paid'
+      ? 'Payment has been received. Thank you for shopping with AABROZE.'
+      : 'Your order has been received. Payment is due on delivery.'
   const details = [
     ['Order number', order.order_number], ['Order date and time (Pakistan)', date],
     ['Full name', order.customer_name], ['Email', order.customer_email],
@@ -21,7 +26,8 @@ export function buildOrderEmail(order: EmailOrder, owner: boolean) {
     ['Order notes', order.order_notes || 'None'],
   ]
   const summary = [['Subtotal', formatPKR(order.subtotal)], ['Shipping charges', formatPKR(order.delivery_charges)],
-    ['Grand total', formatPKR(order.total)], ['Payment Method', 'Cash on Delivery'], ['Order Status', 'Pending']]
+    ['Grand total', formatPKR(order.total)], ['Payment Method', order.payment_method === 'cod' ? 'Cash on Delivery' : order.payment_method],
+    ['Payment Status', order.payment_status], ['Order Status', order.status.charAt(0).toUpperCase() + order.status.slice(1)]]
   const rows = (values: (string | null)[][]) => values.map(([label, value]) =>
     `<tr><td style="padding:6px 8px;color:#8b7355">${escapeHtml(label)}</td><td style="padding:6px 8px">${escapeHtml(value)}</td></tr>`).join('')
   const html = `<!doctype html><html><head><meta charset="utf-8"></head>
@@ -31,7 +37,7 @@ export function buildOrderEmail(order: EmailOrder, owner: boolean) {
       <h1 style="font-family:Georgia,serif;letter-spacing:4px">AABROZE</h1>
       <p>${escapeHtml(title)}</p>
     </div><div style="padding:24px">
-    ${owner ? '' : '<p>Your order has been received. Please pay on delivery; no payment has been collected.</p>'}
+    ${owner ? '' : `<p>${escapeHtml(paymentNotice)}</p>`}
     <table style="width:100%;font-size:13px;overflow-wrap:anywhere">${rows(details)}</table>
     <h2 style="font-family:Georgia,serif;font-size:20px">Order items</h2>
     <table style="width:100%;border-collapse:collapse;font-size:12px;text-align:left">
@@ -46,7 +52,7 @@ export function buildOrderEmail(order: EmailOrder, owner: boolean) {
   const text = [title, ...details.map(([label, value]) => `${label}: ${value}`), 'ORDER ITEMS',
     ...order.items.map((item) => `${item.product_name} | Size: ${item.size} | Qty: ${item.quantity} | Unit: ${formatPKR(item.unit_price)} | Line: ${formatPKR(item.total_price)}`),
     'PAYMENT SUMMARY', ...summary.map(([label, value]) => `${label}: ${value}`),
-    'Your order has been received. Payment is due on delivery.'].join('\n')
+    paymentNotice].join('\n')
   return { html, text, subject: owner ? `New AABROZE Order - ${order.order_number}`
     : `Your AABROZE Order Confirmation - ${order.order_number}` }
 }

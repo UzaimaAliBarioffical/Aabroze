@@ -6,6 +6,7 @@ import Button from '@/components/ui/Button'
 import { useWishlist } from '@/context/WishlistContext'
 import { formatPKR } from '@/lib/utils'
 import { getCollectionImage } from '@/lib/collection-images'
+import ProductCard from '@/components/store/ProductCard'
 
 export default function WishlistPage() {
   const { items, removeItem } = useWishlist()
@@ -41,6 +42,10 @@ export default function WishlistPage() {
               {item.name}
             </Link>
             <p className="text-xs font-sans text-charcoal-300">{formatPKR(item.sale_price ?? item.price)}</p>
+            <ProductCard details={false} preview={{
+              slug: item.slug, name: item.name, color: '', alt: item.name,
+              src: item.image_url || getCollectionImage(item.slug).src,
+            }} />
             <button
               type="button"
               onClick={() => removeItem(item.product_id)}

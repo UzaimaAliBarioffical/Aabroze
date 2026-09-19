@@ -6,23 +6,24 @@
 
 import 'server-only'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseConfigurationError, validateSupabaseUrl } from './config'
 
 let adminClient: SupabaseClient<any> | null = null
 
 export function createSupabaseAdminClient(): SupabaseClient<any> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim()
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
 
   if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL is not set')
+    throw new SupabaseConfigurationError('NEXT_PUBLIC_SUPABASE_URL is not set')
   }
 
   if (!serviceRoleKey) {
-    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set')
+    throw new SupabaseConfigurationError('SUPABASE_SERVICE_ROLE_KEY is not set')
   }
 
   if (!adminClient) {
-    adminClient = createClient(supabaseUrl, serviceRoleKey, {
+    adminClient = createClient(validateSupabaseUrl(supabaseUrl), serviceRoleKey, {
       auth: {
         autoRefreshToken: false,
         persistSession: false,

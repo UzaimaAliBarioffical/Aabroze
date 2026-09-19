@@ -1,0 +1,50 @@
+const { test } = require('node:test')
+const assert = require('node:assert/strict')
+const { randomUUID } = require('node:crypto')
+const { createDatabase, seed, place, customer, smallId } = require('./database.cjs')
+
+test('admin orders: authorization, fulfillment, explicit COD payment, conflict checks and one-time restock', async (t) => {
+  const db = await createDatabase()
+  t.after(() => db.close())
+  await seed(db)
+  const { order } = await place(db)
+  const update = async (id, status, expected, paid = false) =>
+    (await db.query('select update_admin_order($1,$2,$3,$4) as result', [id, status, expected, paid])).rows[0].result
+  await assert.rejects(update(order.id, 'confirmed', 'pending'), /Admin access required/)
+  const adminId = randomUUID()
+  await db.query('insert into auth.users(id,email) values ($1,$2)', [adminId, 'admin@example.com'])
+  await db.query("select set_config('request.jwt.claim.sub',$1,false)", [adminId])
+  await assert.rejects(update(order.id, 'confirmed', 'pending'), /Admin access required/)
+  await db.query("update profiles set role='admin' where id=$1", [adminId])
+  await assert.rejects(update(order.id, 'delivered', 'pending', true), /not allowed/)
+  assert.equal((await update(order.id, 'confirmed', 'pending')).status, 'confirmed')
+  await assert.rejects(update(order.id, 'cancelled', 'pending'), /order changed/)
+  await update(order.id, 'packed', 'confirmed')
+  await update(order.id, 'shipped', 'packed')
+  await assert.rejects(update(order.id, 'cancelled', 'shipped'), /not allowed/)
+  await assert.rejects(update(order.id, 'delivered', 'shipped'), /Confirm COD payment/)
+  const delivered = await update(order.id, 'delivered', 'shipped', true)
+  assert.equal(delivered.payment_status, 'paid')
+  assert.equal(delivered.total, order.total)
+  const payment = (await db.query('select * from payments where order_id=$1', [order.id])).rows[0]
+  assert.equal(payment.status, 'paid')
+  assert.ok(payment.verified_at)
+  await assert.rejects(update(order.id, 'pending', 'delivered'), /not allowed/)
+
+  const cancelled = (await place(db, { customer: { ...customer, idempotency_key: randomUUID() } })).order
+  const stock = async () => (await db.query('select stock from product_variants where id=$1', [smallId])).rows[0].stock
+  assert.equal(await stock(), 1)
+  await assert.rejects(update(cancelled.id, 'cancelled', 'pending', true), /Payment collection/)
+  assert.equal(await stock(), 1, 'failed updates roll back their stock changes')
+  await update(cancelled.id, 'cancelled', 'pending')
+  assert.equal(await stock(), 3)
+  const legacy = (await place(db, { customer: { ...customer, idempotency_key: randomUUID() } })).order
+  await db.query('update orders set request_fingerprint=null where id=$1', [legacy.id])
+  await assert.rejects(update(legacy.id, 'cancelled', 'pending'), /legacy inventory/)
+  assert.equal(await stock(), 1, 'legacy orders must not invent a stock restoration')
+  await assert.rejects(update(cancelled.id, 'cancelled', 'pending'), /order changed/)
+  await assert.rejects(update(cancelled.id, 'confirmed', 'cancelled'), /not allowed/)
+  assert.equal(await stock(), 1)
+  assert.equal((await db.query("select has_function_privilege('anon','update_admin_order(uuid,text,text,boolean)','execute') as allowed")).rows[0].allowed, false)
+  assert.equal((await db.query("select has_function_privilege('authenticated','update_admin_order(uuid,text,text,boolean)','execute') as allowed")).rows[0].allowed, true)
+})
