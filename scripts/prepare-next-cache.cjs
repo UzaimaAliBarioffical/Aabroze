@@ -6,12 +6,17 @@ const os = require('node:os')
 const { createHash } = require('node:crypto')
 
 const project = path.resolve(__dirname, '..')
+const outputName = process.env.AABROZE_DIST_DIR || '.next'
+if (!/^\.next(?:-[a-z0-9-]+)?$/.test(outputName)) {
+  throw new Error('AABROZE_DIST_DIR must be .next or a .next- prefixed directory name')
+}
 if (process.platform === 'win32' && /[\\/]OneDrive(?:[^\\/]*)[\\/]/i.test(project)) {
-  const id = createHash('sha256').update(project.toLowerCase()).digest('hex').slice(0, 16)
+  const cacheIdentity = project.toLowerCase() + (outputName === '.next' ? '' : `:${outputName}`)
+  const id = createHash('sha256').update(cacheIdentity).digest('hex').slice(0, 16)
   const legacyCache = path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'Aabroze', 'next-cache', id)
   const runtime = `${legacyCache}-runtime`
   const cache = path.join(runtime, '.next')
-  const output = path.join(project, '.next')
+  const output = path.join(project, outputName)
   fs.mkdirSync(cache, { recursive: true })
   // Node resolves generated server imports from the junction's real location.
   // Keep dependencies in its parent so Next's output cleanup cannot remove them.

@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from '@/lib/supabase/server'
 import type { Category, Product } from '@/types'
 import { unstable_rethrow } from 'next/navigation'
 import { SupabaseConfigurationError } from '@/lib/supabase/config'
+import { normalizeCatalogProduct } from '@/lib/catalog-data'
 
 let configurationWarningShown = false
 function reportLoadError(scope: string, error: unknown) {
@@ -47,7 +48,10 @@ export async function fetchPublishedProducts(options?: {
       console.error('[products] Failed to load products:', error.message)
       return []
     }
-    return (data as Product[]) ?? []
+    return (data ?? []).flatMap((row) => {
+      const product = normalizeCatalogProduct(row)
+      return product ? [product] : []
+    })
   } catch (err) {
     reportLoadError('products', err)
     return []
@@ -55,12 +59,20 @@ export async function fetchPublishedProducts(options?: {
 }
 
 export async function fetchPublishedProductBySlug(slug: string): Promise<Product | null> {
+  return fetchPublishedProduct('slug', slug)
+}
+
+export async function fetchPublishedProductById(id: string): Promise<Product | null> {
+  return fetchPublishedProduct('id', id)
+}
+
+async function fetchPublishedProduct(column: 'id' | 'slug', value: string): Promise<Product | null> {
   try {
     const supabase = await createSupabaseServerClient()
     const { data, error } = await supabase
       .from('products')
       .select(PRODUCT_LIST_SELECT)
-      .eq('slug', slug)
+      .eq(column, value)
       .eq('is_published', true)
       .eq('is_archived', false)
       .maybeSingle()
@@ -69,7 +81,7 @@ export async function fetchPublishedProductBySlug(slug: string): Promise<Product
       console.error('[products] Failed to load product:', error.message)
       return null
     }
-    return (data as Product) ?? null
+    return normalizeCatalogProduct(data)
   } catch (err) {
     reportLoadError('products', err)
     return null

@@ -6,7 +6,7 @@ test.beforeEach(async ({ request }) => {
 })
 
 for (const width of [390, 1280]) {
-  test(`all four image-only New Arrivals show both buttons without hover at ${width}px`, async ({ page, request }) => {
+  test(`image-only previews explain unavailable catalog and cannot be ordered at ${width}px`, async ({ page, request }) => {
     await page.setViewportSize({ width, height: 900 })
     await request.post('http://127.0.0.1:3111/__catalog', { data: { empty: true } })
     await page.goto('/')
@@ -20,12 +20,10 @@ for (const width of [390, 1280]) {
         await button.scrollIntoViewIfNeeded()
         await page.mouse.move(0, 0)
         await expect(button).toBeVisible()
-        await expect(button).toHaveCSS('opacity', '1')
-        await button.click()
-        await expect(card.getByRole('status')).toContainText('Price and sizes are currently unavailable')
-        await expect(button).toBeEnabled()
+        await expect(button).toBeDisabled()
       }
     }
+    await expect(section.getByRole('status')).toContainText('collection previews')
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aabroze_cart') || '[]'))).toEqual([])
     expect(await page.evaluate(() => sessionStorage.getItem('aabroze_buy_now'))).toBeNull()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
@@ -52,6 +50,7 @@ for (const route of ['/', '/shop', '/new-arrivals', '/collections/casual-wear'])
     }
     await card.getByRole('button', { name: 'Add to Cart', exact: true }).click()
     const cartModal = page.getByRole('dialog', { name: 'Select Size', exact: true })
+    await expect(cartModal.getByRole('option', { name: /^XL / })).toBeDisabled()
     await expect(cartModal.getByRole('button', { name: 'Add to Cart', exact: true })).toBeDisabled()
     await cartModal.getByRole('option', { name: /^S / }).click()
     await cartModal.getByRole('button', { name: 'Add to Cart', exact: true }).click()
@@ -68,5 +67,28 @@ for (const route of ['/', '/shop', '/new-arrivals', '/collections/casual-wear'])
     const direct = await page.evaluate(() => JSON.parse(sessionStorage.getItem('aabroze_buy_now')))
     expect(direct[0]).toMatchObject({ product_id: productId, variant_id: mediumId, size: 'M', sale_price: 2200 })
     expect(await page.evaluate(() => JSON.parse(localStorage.getItem('aabroze_cart')))).toEqual(cart)
+    await page.goBack()
+    await expect(card.getByRole('button', { name: 'Buy Now', exact: true })).toBeEnabled()
+    await card.getByRole('button', { name: 'Buy Now', exact: true }).click()
+    await expect(page.getByRole('dialog', { name: 'Buy Now', exact: true })).toBeVisible()
   })
 }
+
+test('wishlist resolves a renamed product by its saved database ID', async ({ page }) => {
+  await page.addInitScript(({ productId }) => {
+    localStorage.setItem('aabroze_wishlist', JSON.stringify([{
+      product_id: productId, slug: 'previous-product-slug', name: 'Previous name',
+      price: 1, sale_price: null, image_url: '',
+    }]))
+  }, { productId })
+  await page.goto('/wishlist')
+  await page.getByRole('button', { name: 'Buy Now', exact: true }).click()
+  const modal = page.getByRole('dialog', { name: 'Buy Now', exact: true })
+  await expect(modal.getByRole('heading', { name: 'Test Lawn Suit' })).toBeVisible()
+  await modal.getByRole('option', { name: /^S / }).click()
+  await modal.getByRole('button', { name: 'Continue to Checkout' }).click()
+  await expect(page).toHaveURL(/checkout\?mode=buy-now/)
+  await expect(page.getByText('Rs 2,700 each', { exact: true })).toBeVisible()
+  const direct = await page.evaluate(() => JSON.parse(sessionStorage.getItem('aabroze_buy_now')))
+  expect(direct[0]).toMatchObject({ product_id: productId, variant_id: smallId, slug: 'test-lawn-suit', price: 2700 })
+})

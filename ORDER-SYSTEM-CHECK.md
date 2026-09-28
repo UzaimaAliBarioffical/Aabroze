@@ -4,6 +4,24 @@ The existing cart, Buy Now, size selection, price precedence, checkout form, COD
 transaction, and independent owner/customer email queue are reused. The storefront,
 logo, product data, and prices are unchanged.
 
+## Purchasing fixes
+
+- Size-modal purchases normalize database decimal prices to numbers before cart
+  validation. Previously, sizes using a string-valued base/sale price could be
+  rejected while sizes with an explicit variant price worked.
+- Buy Now cards reset their loading state before navigation, so returning from
+  checkout leaves both purchase actions usable.
+- Product details expose size prices and an Order Now action using the same
+  selected-size checkout as Buy Now.
+- Checkout quantity can be changed before submission and survives refresh for
+  both cart and direct purchases. Pending retries retain their original quantity
+  and customer details to preserve duplicate-order protection.
+- Rejected cart additions leave the size modal open so the shopper can correct
+  the selection; fractional modal quantities are normalized to whole items.
+- Incomplete database/API receipts cannot trigger confirmation or clear the bag.
+- Browser tests build with their local public configuration, separately from a
+  running development server, with OneDrive-safe generated output.
+
 ## Completed admin integration
 
 - `/admin/login`: Supabase password login, admin-role verification and sign out.
@@ -60,7 +78,17 @@ remain queued independently of the saved order.
 
 ## Verification
 
+Latest local verification: production build, TypeScript and ESLint passed;
+all 12 database/unit tests and all 17 browser tests passed. Browser coverage
+includes sale-price normalization across all four listing routes, returning from
+Buy Now, Order Now, editable checkout quantities, failed-save recovery and email
+queue processing. These results use isolated local services, not the hosted
+catalog or Gmail. Live catalog/schema compatibility, live order persistence and
+actual SMTP acceptance/inbox delivery remain blocked by missing credentials.
+
 Run `npm.cmd run build`, `npm.cmd test`, then `npm.cmd run test:e2e` on Windows.
+The browser command prepares its own isolated build; no test credentials are
+written to `.env.local`.
 The browser suite uses the production Next.js app with an isolated PGlite database
 running the actual migrations. Supabase Auth/PostgREST and email transport are local
 test fixtures. Outbound application fetches are restricted to loopback in this test

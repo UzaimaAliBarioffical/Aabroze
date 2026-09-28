@@ -9,5 +9,5 @@ export default function QuickView({ product, isOpen, onClose }: {
 }) {
   const { addItem } = useCart()
   return <VariantSelectModal product={product} isOpen={isOpen} intent="cart" onClose={onClose}
-    onConfirm={(item) => { addItem(item); onClose() }} />
+    onConfirm={(item) => { if (addItem(item)) onClose() }} />
 }

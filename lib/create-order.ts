@@ -38,5 +38,12 @@ export async function placeStoreOrder(payload: PlaceOrderPayload): Promise<Place
     return { success: false, retryable: error.code !== 'P0001', error: error.code === 'P0001' && error.message.startsWith('Checkout:')
       ? error.message.slice(9).trim() : 'Unable to save your order. Please retry with the same checkout.' }
   }
+  // A successful HTTP/RPC response alone is not proof of a persisted order.
+  if (!data?.order?.id || !data.order.order_number ||
+      data.order.total == null || !Number.isFinite(Number(data.order.total)) ||
+      !Array.isArray(data.order.items) || !data.order.items.length) {
+    console.error('[orders] Transaction returned no complete order receipt')
+    return { success: false, retryable: true, error: 'Unable to confirm your saved order. Please retry with the same checkout.' }
+  }
   return { success: true, duplicate: data.duplicate, order: data.order }
 }

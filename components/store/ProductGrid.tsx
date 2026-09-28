@@ -11,11 +11,16 @@ export default function ProductGrid({ products, previewImages }: ProductGridProp
   if (!products || products.length === 0) {
     if (previewImages && previewImages.length > 0) {
       return (
+        <>
+        <p role="status" className="text-center text-xs font-sans text-charcoal-200 mb-6">
+          The catalog is currently unavailable. These images are collection previews; ordering will be available when prices and sizes are confirmed.
+        </p>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
           {previewImages.map((image) => (
-            <ProductCard key={image.slug} preview={image} />
+            <ProductCard key={image.slug} preview={image} catalogUnavailable />
           ))}
         </div>
+        </>
       )
     }
 

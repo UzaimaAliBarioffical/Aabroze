@@ -14,6 +14,7 @@ import { Heart, Truck, RotateCcw, ShieldCheck } from 'lucide-react'
 import type { Product } from '@/types'
 import { getCollectionImage, getProductImage } from '@/lib/collection-images'
 import { useRouter } from 'next/navigation'
+import { missingStandardSizes } from '@/lib/catalog-data'
 
 export default function ProductDetailClient({ product }: { product: Product }) {
   const [selectedImage, setSelectedImage] = useState(0)
@@ -165,13 +166,20 @@ export default function ProductDetailClient({ product }: { product: Product }) {
                     disabled={!available}
                     onClick={() => { setSelectedSize(v.size); setQuantity(1) }}
                     aria-pressed={selectedSize === v.size}
+                    aria-label={v.size}
                     title={available ? formatPKR(getVariantUnitPrice(product, v)) : 'Out of stock'}
-                    className={`size-btn ${selectedSize === v.size ? 'selected' : ''}`}
+                    className={`size-btn h-auto min-w-16 px-2 py-2 ${selectedSize === v.size ? 'selected' : ''}`}
                   >
-                    {v.size}
+                    <span className="block">{v.size}</span>
+                    <span className="block text-[10px] mt-1">{available ? formatPKR(getVariantUnitPrice(product, v)) : 'Out of stock'}</span>
                   </button>
                 )
               })}
+              {missingStandardSizes(product.variants ?? []).map(size => (
+                <button key={size} type="button" disabled aria-label={size} className="size-btn h-auto min-w-16 px-2 py-2">
+                  <span className="block">{size}</span><span className="block text-[10px] mt-1">Unavailable</span>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -204,7 +212,10 @@ export default function ProductDetailClient({ product }: { product: Product }) {
               />
             </button>
           </div>
-          <Button className="w-full" size="lg" disabled={!canPurchase} onClick={() => handleAddToCart(true)}>Buy Now</Button>
+          <div className="grid grid-cols-2 gap-3">
+            <Button className="w-full" size="lg" disabled={!canPurchase} onClick={() => handleAddToCart(true)}>Buy Now</Button>
+            <Button className="w-full" size="lg" disabled={!canPurchase} onClick={() => handleAddToCart(true)}>Order Now</Button>
+          </div>
 
           {/* Reassurance Features */}
           <div className="pt-4 grid grid-cols-3 gap-2 border-t border-beige-200 text-center">

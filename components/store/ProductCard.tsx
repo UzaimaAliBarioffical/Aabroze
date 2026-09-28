@@ -17,9 +17,9 @@ import type { CartItem, Product } from '@/types'
 import { saveBuyNow } from '@/lib/cart'
 import toast from 'react-hot-toast'
 
-type ProductCardProps = ({ product: Product; preview?: never } | { preview: CollectionImage; product?: never }) & { details?: boolean }
+type ProductCardProps = ({ product: Product; preview?: never } | { preview: CollectionImage; product?: never }) & { details?: boolean; productId?: string; catalogUnavailable?: boolean }
 
-export default function ProductCard({ product: suppliedProduct, preview, details = true }: ProductCardProps) {
+export default function ProductCard({ product: suppliedProduct, preview, details = true, productId, catalogUnavailable = false }: ProductCardProps) {
   const CardElement = details ? 'article' : 'div'
   const [resolvedProduct, setResolvedProduct] = useState<Product | null>(null)
   const product = suppliedProduct ?? resolvedProduct
@@ -76,7 +76,7 @@ export default function ProductCard({ product: suppliedProduct, preview, details
     if (!product) {
       setPending(nextIntent)
       try {
-        const found = await resolveCardProduct(entry.slug)
+        const found = await resolveCardProduct(entry.slug, productId)
         if (!found) {
           setAvailabilityMessage('Price and sizes are currently unavailable. Please try again later.')
           return
@@ -101,11 +101,11 @@ export default function ProductCard({ product: suppliedProduct, preview, details
       }
       setModalOpen(false)
       router.push('/checkout?mode=buy-now')
+      setPending(null)
       return
     }
     setPending('cart')
-    addCartItem(item)
-    setModalOpen(false)
+    if (addCartItem(item)) setModalOpen(false)
     setPending(null)
   }
 
@@ -178,7 +178,7 @@ export default function ProductCard({ product: suppliedProduct, preview, details
           type="button"
           onClick={(e) => openModal('cart', e)}
           aria-label="Add to Cart"
-          disabled={(!!product && !canPurchase) || pending !== null}
+          disabled={catalogUnavailable || (!!product && !canPurchase) || pending !== null}
           className="btn-secondary px-2 py-2.5 text-[10px] md:text-xs tracking-wider disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal-300"
         >
           {pending === 'cart' ? 'Loading…' : 'ADD TO CART'}
@@ -187,7 +187,7 @@ export default function ProductCard({ product: suppliedProduct, preview, details
           type="button"
           onClick={(e) => openModal('buy-now', e)}
           aria-label="Buy Now"
-          disabled={(!!product && !canPurchase) || pending !== null}
+          disabled={catalogUnavailable || (!!product && !canPurchase) || pending !== null}
           className="btn-primary px-2 py-2.5 text-[10px] md:text-xs tracking-wider disabled:opacity-40 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-charcoal-300"
         >
           {pending === 'buy-now' ? 'Loading…' : 'BUY NOW'}

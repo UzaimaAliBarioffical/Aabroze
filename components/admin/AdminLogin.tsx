@@ -23,7 +23,7 @@ export default function AdminLogin() {
     } catch { setError('Unable to sign in. Please try again.') }
     finally { setLoading(false) }
   }}>
-    <Input label="Email" name="email" type="email" autoComplete="username" required />
+    <Input label="Username" name="username" type="text" autoComplete="username" required />
     <Input label="Password" name="password" type="password" autoComplete="current-password" required />
     {error && <p role="alert" className="form-error">{error}</p>}
     <Button type="submit" loading={loading} className="w-full">Sign in</Button>

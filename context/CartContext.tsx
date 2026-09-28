@@ -87,7 +87,7 @@ interface CartContextValue {
   removePurchased: (items: CartItem[]) => void
   items: CartItem[]
   isOpen: boolean
-  addItem: (item: CartItem, options?: AddItemOptions) => void
+  addItem: (item: CartItem, options?: AddItemOptions) => boolean
   removeItem: (product_id: string, variant_id: string) => void
   updateQuantity: (product_id: string, variant_id: string, quantity: number) => void
   clearCart: () => void
@@ -126,22 +126,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addItem = (item: CartItem, options?: AddItemOptions) => {
     if (!storedCartItemSchema.safeParse(item).success || item.quantity > (item.stock ?? 10)) {
       toast.error('Please select an available size and quantity')
-      return
+      return false
     }
     const existing = state.items.find((entry) => entry.variant_id === item.variant_id)
     if (!existing && state.items.length >= 50) {
       toast.error('Your bag can contain up to 50 different selections')
-      return
+      return false
     }
     if ((existing?.quantity ?? 0) + item.quantity > Math.min(item.stock ?? 10, 10)) {
       toast.error('Your bag already contains the available quantity for this size')
-      return
+      return false
     }
     dispatch({ type: 'ADD_ITEM', payload: item })
     toast.success(`${item.name} added to cart`)
     if (options?.openDrawer !== false) {
       dispatch({ type: 'OPEN_CART' })
     }
+    return true
   }
 
   const removeItem = (product_id: string, variant_id: string) => {
@@ -161,7 +162,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const itemCount = state.items.reduce((sum, i) => sum + i.quantity, 0)
   const subtotal = state.items.reduce(
-    (sum, i) => sum + (i.sale_price ?? i.price) * i.quantity,
+    (sum, i) => sum + (i.sale_price ?? i.price ?? 0) * i.quantity,
     0
   )
 

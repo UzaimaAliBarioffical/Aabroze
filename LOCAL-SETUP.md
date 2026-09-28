@@ -1,5 +1,8 @@
 # Local AABROZE setup
 
+For the exact cause of image-only previews, missing credential names, where to
+obtain them, and read-only catalog diagnostics, see `CATALOG-CONFIGURATION.md`.
+
 For the completed order/admin flow and migration 004, see `ORDER-SYSTEM-CHECK.md`.
 
 The existing storefront and database schema are preserved. Live catalog data and
@@ -29,6 +32,10 @@ server-only token if using the protected `/api/orders/retry-emails` endpoint.
 
 For local links, set `NEXT_PUBLIC_APP_URL=http://localhost:3000`.
 
+The checked-out workspace now has an ignored `.env.local` scaffold. Its credential
+fields are intentionally blank. Fill them with the existing project's values;
+image previews cannot supply real product IDs, inventory or prices.
+
 Restart development after editing environment variables. Rebuild production after
 changing public variables because Next.js embeds them in browser bundles.
 
@@ -45,6 +52,12 @@ Stop development before building: both commands use `.next`. The lifecycle scrip
 keeps generated files in a local AppData cache outside OneDrive and links its parent
 to this project's `node_modules`. Do not remove application or environment files
 to repair a generated cache.
+
+`npm.cmd run test:e2e` now builds its own `.next-purchase-tests` output with
+process-scoped local test configuration before running Playwright. It does not
+edit `.env.local`, connect to hosted Supabase, or send real email. Its generated
+cache also uses the OneDrive-safe local cache on Windows. The first build needs
+network access to download the existing Inter font from Google Fonts.
 
 Visit `/`, `/shop`, `/new-arrivals`, `/collections`, an existing published product's
 `/shop/<slug>`, `/cart`, and `/checkout`. Once credentials are configured, confirm

@@ -41,8 +41,8 @@ export default function WishlistPage() {
             <Link href={`/shop/${item.slug}`} className="font-serif text-sm text-charcoal-300 line-clamp-2">
               {item.name}
             </Link>
-            <p className="text-xs font-sans text-charcoal-300">{formatPKR(item.sale_price ?? item.price)}</p>
-            <ProductCard details={false} preview={{
+            <p className="text-xs font-sans text-charcoal-300">{formatPKR(item.sale_price ?? item.price ?? 0)}</p>
+            <ProductCard details={false} productId={item.product_id} preview={{
               slug: item.slug, name: item.name, color: '', alt: item.name,
               src: item.image_url || getCollectionImage(item.slug).src,
             }} />

@@ -47,7 +47,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
     <section className="bg-white border border-beige-200 p-5 space-y-3">
       <h2 className="font-serif text-xl">Order emails</h2>
       {emailError ? <p role="alert">Email queue unavailable. Check the database migration.</p> : !jobs?.length ? <p>No queued email records for this order.</p>
-        : jobs.map(job => <p key={job.id} className="text-sm">
+        : jobs.map((job: any) => <p key={job.id} className="text-sm">
           {job.recipient === 'owner' ? 'Owner notification' : 'Customer confirmation'}: {job.sent_at ? 'Accepted by email provider' : job.last_error ? 'Delivery failed — queued for retry' : 'Queued'} · Attempts: {job.attempts}
         </p>)}
     </section>

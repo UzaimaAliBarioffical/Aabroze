@@ -68,6 +68,7 @@ async function main() {
           product.images = []
         }
         let filtered = eq('slug') ? products.filter((p) => p.slug === eq('slug')) : products
+        if (eq('id')) filtered = filtered.filter(p => p.id === eq('id'))
         if (eq('category_id')) filtered = filtered.filter(p => p.category_id === eq('category_id'))
         if (eq('is_new_arrival')) filtered = filtered.filter(p => p.is_new_arrival)
         return send(req.headers.accept?.includes('vnd.pgrst.object') ? filtered[0] : filtered)

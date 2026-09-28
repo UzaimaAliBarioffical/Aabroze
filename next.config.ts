@@ -43,6 +43,8 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  // Allow verification builds to run without sharing the active dev server's cache.
+  distDir: process.env.AABROZE_DIST_DIR || '.next',
   // SMTP uses Node's transport modules; keep the mailer out of the server bundle.
   serverExternalPackages: ['nodemailer'],
   images: {

@@ -1,8 +1,8 @@
-﻿'use client'
+'use client'
 
 import Link from 'next/link'
 import BrandLogo from '@/components/ui/BrandLogo'
-import { Search, Heart, ShoppingBag, Menu, Phone, MessageCircle } from 'lucide-react'
+import { Search, Heart, ShoppingBag, Menu, Phone, MessageCircle, User } from 'lucide-react'
 import { useState } from 'react'
 import { useCart } from '@/context/CartContext'
 import { useWishlist } from '@/context/WishlistContext'
@@ -12,9 +12,10 @@ import { STORE_PHONE_LOCAL, STORE_PHONE_TEL, storeWhatsAppUrl } from '@/lib/stor
 
 const navLinks = [
   { href: '/', label: 'Home' },
-  { href: '/shop', label: 'Shop' },
-  { href: '/new-arrivals', label: 'New Arrivals' },
-  { href: '/collections', label: 'Collections' },
+  { href: '/shop?category=men', label: 'Men' },
+  { href: '/shop?category=women', label: 'Women' },
+  { href: '/shop?category=kids', label: 'Kids' },
+  { href: '/shop?category=accessories', label: 'Accessories' },
   { href: '/about', label: 'About' },
   { href: '/contact', label: 'Contact' },
 ]
@@ -77,6 +78,9 @@ export default function Header() {
               </a>
               <Link href="/shop" aria-label="Search" className="p-2 text-charcoal-200 hover:text-charcoal-300 transition-colors">
                 <Search size={20} />
+              </Link>
+              <Link href="/login" aria-label="User Account" className="p-2 text-charcoal-200 hover:text-charcoal-300 transition-colors">
+                <User size={20} />
               </Link>
               <Link href="/wishlist" aria-label={`Wishlist (${wishlistCount} items)`} className="p-2 text-charcoal-200 hover:text-charcoal-300 transition-colors relative">
                 <Heart size={20} />

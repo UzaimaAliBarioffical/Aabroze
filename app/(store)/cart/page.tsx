@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import Link from 'next/link'
 import SafeImage from '@/components/ui/SafeImage'
@@ -66,7 +66,7 @@ export default function CartPage() {
                   </div>
                   <p className="text-xs text-taupe-200 font-sans mt-1">Size: {item.size}</p>
                   <p className="text-sm font-sans font-medium text-charcoal-300 mt-2">
-                    {formatPKR(item.sale_price ?? item.price)}
+                    {formatPKR(item.sale_price ?? item.price ?? 0)}
                   </p>
                 </div>
 

@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { CartProvider } from '@/context/CartContext'
 import { WishlistProvider } from '@/context/WishlistContext'
+import { OrderRequestProvider } from '@/context/OrderRequestContext'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
 
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans">
         <CartProvider>
+          <OrderRequestProvider>
           <WishlistProvider>
             {children}
             <Toaster
@@ -60,6 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               }}
             />
           </WishlistProvider>
+          </OrderRequestProvider>
         </CartProvider>
       </body>
     </html>

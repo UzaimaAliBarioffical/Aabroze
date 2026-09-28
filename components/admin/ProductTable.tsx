@@ -15,15 +15,22 @@ export default function ProductTable({ products }: ProductTableProps) {
           <thead>
             <tr className="bg-beige-100/60 border-b border-beige-200 text-charcoal-200 uppercase tracking-wider">
               <th className="p-3.5">Product</th>
-              <th className="p-3.5">Category</th>
               <th className="p-3.5">Price</th>
-              <th className="p-3.5">Status</th>
+              <th className="p-3.5">Stock</th>
+              <th className="p-3.5">Visibility</th>
               <th className="p-3.5 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-beige-100">
             {products.map((p) => {
               const inStock = p.variants?.some((v) => v.stock > 0) ?? false
+              const totalStock = p.variants?.reduce((s, v) => s + v.stock, 0) ?? 0
+              const visibilityLabel = p.is_archived ? 'Archived' : p.is_published ? 'Published' : 'Draft'
+              const visibilityClass = p.is_archived
+                ? 'bg-beige-100 text-charcoal-200'
+                : p.is_published
+                ? 'bg-green-50 text-green-700'
+                : 'bg-yellow-50 text-yellow-700'
               return (
                 <tr key={p.id} className="hover:bg-cream/50 transition-colors">
                   <td className="p-3.5 flex items-center gap-3">
@@ -40,17 +47,26 @@ export default function ProductTable({ products }: ProductTableProps) {
                       <p className="text-[10px] text-taupe-200">{p.sku || 'No SKU'}</p>
                     </div>
                   </td>
-                  <td className="p-3.5 text-charcoal-200">{p.category_id || 'General'}</td>
                   <td className="p-3.5 font-medium text-charcoal-300">
-                    {formatPKR(p.sale_price ?? p.price)}
+                    {p.sale_price ? (
+                      <span>
+                        {formatPKR(p.sale_price)}{' '}
+                        <span className="line-through text-taupe-200 font-normal">{formatPKR(p.price)}</span>
+                      </span>
+                    ) : (
+                      formatPKR(p.price)
+                    )}
                   </td>
                   <td className="p-3.5">
                     <span
-                      className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${
-                        inStock ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
-                      }`}
+                      className={inStock ? 'inline-block px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-green-50 text-green-700' : 'inline-block px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider bg-red-50 text-red-700'}
                     >
-                      {inStock ? 'In Stock' : 'Out of Stock'}
+                      {inStock ? totalStock + ' units' : 'Out of Stock'}
+                    </span>
+                  </td>
+                  <td className="p-3.5">
+                    <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium uppercase tracking-wider ${visibilityClass}`}>
+                      {visibilityLabel}
                     </span>
                   </td>
                   <td className="p-3.5 text-right">

@@ -54,9 +54,13 @@ export const collectionImages: CollectionImage[] = [
 ]
 
 export function getCollectionImage(slug: string) {
-  return collectionImages.find((image) => image.slug === slug) ?? collectionImages[0]
+  return collectionImages.find((image) => image.slug === slug) ?? {
+    slug, name: 'AABROZE', color: '', src: '/brand/aabroze-logo.jpeg', alt: 'Product image unavailable',
+  }
 }
 
 export function getProductImage(product: Pick<Product, 'slug' | 'images'>) {
-  return product.images?.[0]?.url || getCollectionImage(product.slug).src
+  const images = (product.images ?? []).filter(image => !image.is_video && image.url)
+    .sort((a, b) => a.display_order - b.display_order)
+  return images[0]?.url || getCollectionImage(product.slug).src
 }

@@ -2,11 +2,13 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, ShoppingBag, LogOut } from 'lucide-react'
+import { LayoutDashboard, ShoppingBag, Package, Settings, LogOut } from 'lucide-react'
 
 const navItems = [
-  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
-  { href: '/admin/orders', label: 'Orders', icon: ShoppingBag },
+  { href: '/admin', label: 'Dashboard', icon: LayoutDashboard, exact: true },
+  { href: '/admin/orders', label: 'Orders', icon: ShoppingBag, exact: false },
+  { href: '/admin/products', label: 'Products', icon: Package, exact: false },
+  { href: '/admin/settings', label: 'Settings', icon: Settings, exact: false },
 ]
 
 export default function AdminSidebar() {
@@ -22,7 +24,9 @@ export default function AdminSidebar() {
       <nav className="flex-1 p-4 space-y-1">
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive = pathname === item.href
+          const isActive = item.exact
+            ? pathname === item.href
+            : pathname === item.href || pathname.startsWith(item.href + '/')
           return (
             <Link
               key={item.href}

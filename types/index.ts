@@ -72,12 +72,13 @@ export interface ProductVariant {
 
 // ─── Cart ─────────────────────────────────────────────────────────
 export interface CartItem {
+  request_only?: boolean
   stock?: number
   product_id: string
   variant_id: string
   name: string
   slug: string
-  price: number
+  price: number | null
   sale_price: number | null
   image_url: string
   size: string

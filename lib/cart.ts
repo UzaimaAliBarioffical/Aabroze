@@ -1,12 +1,17 @@
 import { z } from 'zod'
 import type { CartItem } from '@/types'
+import { formatPKR } from '@/lib/utils'
 
 export const storedCartItemSchema = z.object({
-  product_id: z.string().uuid(), variant_id: z.string().uuid(),
+  product_id: z.string().min(1), variant_id: z.string().min(1), request_only: z.boolean().optional(),
   name: z.string(), slug: z.string(), size: z.string().min(1), image_url: z.string(),
-  price: z.number().finite().nonnegative(), sale_price: z.number().finite().nonnegative().nullable(),
+  price: z.number().finite().nonnegative().nullable(), sale_price: z.number().finite().nonnegative().nullable(),
   quantity: z.number().int().min(1).max(10), stock: z.number().int().nonnegative().optional(),
-})
+}).refine(item => item.request_only
+  ? item.product_id === `preview:${item.slug}` && item.variant_id === `request:${item.size}` && ['S', 'M', 'L', 'XL'].includes(item.size) && item.price === null && item.sale_price === null
+  : z.string().uuid().safeParse(item.product_id).success && z.string().uuid().safeParse(item.variant_id).success && item.price !== null)
+
+export const cartPriceLabel = (item: CartItem) => (item.sale_price ?? item.price) === null ? 'Price to be confirmed' : formatPKR((item.sale_price ?? item.price)!)
 export function readCart(value: string | null): CartItem[] {
   try {
     const parsed = z.array(storedCartItemSchema).max(50).safeParse(JSON.parse(value || '[]'))

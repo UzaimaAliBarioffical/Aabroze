@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import Link from 'next/link'
 import BrandLogo from '@/components/ui/BrandLogo'
@@ -61,6 +61,15 @@ export default function MobileMenu({ isOpen, onClose, links }: MobileMenuProps) 
                 </Link>
               </li>
             ))}
+              <li>
+                <Link
+                  href="/login"
+                  onClick={onClose}
+                  className="block py-3 text-sm font-sans tracking-widest uppercase text-charcoal-200 hover:text-charcoal-300 border-b border-beige-200 transition-colors"
+                >
+                  Sign In / Register
+                </Link>
+              </li>
           </ul>
         </nav>
 

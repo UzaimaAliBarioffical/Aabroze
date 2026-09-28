@@ -31,13 +31,13 @@ function CheckoutContent() {
   const buyNow = search.get('mode') === 'buy-now'
   const receiptKey = search.get('order')
   const pendingKey = buyNow ? 'aabroze_pending_direct' : 'aabroze_pending_cart'
-  const { items: cartItems, removePurchased, closeCart, ready } = useCart()
+  const { items: cartItems, updateQuantity, removePurchased, closeCart, ready } = useCart()
   const [directItems, setDirectItems] = useState<CartItem[]>([])
   const [pending, setPending] = useState<PendingCheckout | null>(null)
   const [initialized, setInitialized] = useState(false)
   const submitLock = useRef(false)
   const items = pending?.items ?? (buyNow ? directItems : cartItems)
-  const subtotal = items.reduce((sum, item) => sum + (item.sale_price ?? item.price) * item.quantity, 0)
+  const subtotal = items.reduce((sum, item) => sum + (item.sale_price ?? item.price ?? 0) * item.quantity, 0)
   const [submitting, setSubmitting] = useState(false)
   const [formError, setFormError] = useState('')
   const [errors, setErrors] = useState<FieldErrors>({})
@@ -97,6 +97,17 @@ function CheckoutContent() {
     setErrors((prev) => ({ ...prev, [key]: '' }))
   }
 
+  const setQuantity = (item: CartItem, value: number) => {
+    if (pending || submitting || !Number.isFinite(value)) return
+    const quantity = Math.max(1, Math.min(Math.floor(value), item.stock ?? 10, 10))
+    if (buyNow) {
+      const next = directItems.map((entry) => entry.variant_id === item.variant_id ? { ...entry, quantity } : entry)
+      try { sessionStorage.setItem(BUY_NOW_KEY, JSON.stringify(next)) }
+      catch { setFormError('Please enable browser storage to update your order quantity.'); return }
+      setDirectItems(next)
+    } else updateQuantity(item.product_id, item.variant_id, quantity)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (submitLock.current || !initialized || !ready) return
@@ -151,6 +162,10 @@ function CheckoutContent() {
           try { sessionStorage.removeItem(pendingKey) } catch { /* Keep UI usable. */ }
         }
         return
+      }
+      if (typeof result.data?.order_number !== 'string' || !result.data.order_number ||
+          typeof result.data?.order_id !== 'string' || result.data.total == null || !Number.isFinite(Number(result.data.total))) {
+        throw new Error('Incomplete order receipt')
       }
       setSuccessNumber(result.data.order_number)
       setSuccessTotal(result.data.total)
@@ -379,11 +394,18 @@ function CheckoutContent() {
                 <div className="min-w-0 flex-1">
                   <p className="font-serif text-sm text-charcoal-300 line-clamp-2">{item.name}</p>
                   <p className="text-[11px] text-taupe-200 font-sans mt-0.5">Size: {item.size}</p>
-                  <p className="text-[11px] text-taupe-200 font-sans">Qty: {item.quantity}</p>
+                  <label className="flex items-center gap-2 text-[11px] text-taupe-200 font-sans">
+                    Quantity
+                    <input type="number" min={1} max={Math.min(item.stock ?? 10, 10)} step={1}
+                      aria-label={`Quantity for ${item.name}, size ${item.size}`}
+                      value={item.quantity} disabled={submitting || pending !== null}
+                      onChange={(event) => setQuantity(item, Number(event.target.value))}
+                      className="w-16 border border-beige-200 p-1 text-charcoal-300" />
+                  </label>
                   <p className="text-xs font-sans text-charcoal-300 mt-1">
-                    {formatPKR(item.sale_price ?? item.price)} each
+                    {formatPKR(item.sale_price ?? item.price ?? 0)} each
                   </p>
-                  <p className="text-xs font-sans">Line total: {formatPKR((item.sale_price ?? item.price) * item.quantity)}</p>
+                  <p className="text-xs font-sans">Line total: {formatPKR((item.sale_price ?? item.price ?? 0) * item.quantity)}</p>
                 </div>
               </li>
             ))}

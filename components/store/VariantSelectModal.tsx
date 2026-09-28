@@ -7,8 +7,9 @@ import Button from '@/components/ui/Button'
 import { Minus, Plus } from 'lucide-react'
 import { formatPKR } from '@/lib/utils'
 import { getCollectionImage, getProductImage } from '@/lib/collection-images'
-import { getVariantUnitPrice, isUuid, sortVariants } from '@/lib/pricing'
+import { getVariantUnitPrice, isUuid, sortVariants, toMoney } from '@/lib/pricing'
 import type { CartItem, Product, ProductVariant } from '@/types'
+import { missingStandardSizes } from '@/lib/catalog-data'
 
 export type VariantModalIntent = 'cart' | 'buy-now'
 
@@ -76,11 +77,11 @@ export default function VariantSelectModal({
       name: product.name,
       slug: product.slug,
       size: selectedVariant.size,
-      price: selectedVariant.price != null ? unitPrice : product.price,
+      price: selectedVariant.price != null ? unitPrice : toMoney(product.price),
       sale_price:
         selectedVariant.price != null
           ? null
-          : product.sale_price,
+          : product.sale_price == null ? null : toMoney(product.sale_price),
       image_url: image,
       quantity: Math.floor(qty),
       stock: selectedVariant.stock,
@@ -152,6 +153,12 @@ export default function VariantSelectModal({
                     </button>
                   )
                 })}
+                {missingStandardSizes(variants).map(size => (
+                  <button key={size} type="button" role="option" aria-selected={false} disabled
+                    className="min-w-[4.5rem] px-3 py-2 text-xs font-sans border border-beige-100 text-taupe-100">
+                    <span className="block">{size}</span><span className="block text-[10px]">Unavailable</span>
+                  </button>
+                ))}
               </div>
             )}
             {selectedVariant && selectedVariant.stock > 0 && (
@@ -186,7 +193,7 @@ export default function VariantSelectModal({
                 onChange={(e) => {
                   const next = Number(e.target.value)
                   if (!Number.isFinite(next)) return
-                  setQuantity(Math.min(maxQty, Math.max(1, next)))
+                  setQuantity(Math.min(maxQty, Math.max(1, Math.floor(next))))
                 }}
                 className="w-12 text-center text-sm font-sans text-charcoal-300 bg-transparent border-0 focus:outline-none"
                 aria-label="Quantity"
